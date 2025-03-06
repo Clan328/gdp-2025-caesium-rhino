@@ -12,7 +12,7 @@ static class Helpers
     /// <param name="Cond">The condition to require</param>
     /// <param name="Message">The message to include in the exception</param>
     /// <param name="Argument">The argument being inspected</param>
-    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="ArgumentException">Raised if the condition fails</exception>
     public static void Require(bool Cond, string Message, string Argument)
     {
         if (!Cond)
@@ -21,6 +21,9 @@ static class Helpers
         }
     }
 
+    /// <summary>
+    /// Convert a matrix stored in column major order to a Transform
+    /// </summary>
     public static Transform ColumnMajor(double[] data)
     {
         return new Transform
@@ -45,34 +48,31 @@ static class Helpers
     }
 
     /// <summary>
-    /// Convert (x, y, z) point in right-handed 3-axis coordinate system to Rhino3d's left-handed coordinate system.
+    /// Default JsonSerializerOptions for deserialising Tiles3D json.
     /// </summary>
-    public static Point3d Point3dR(double X, double Y, double Z)
-    {
-        // Something should be negated
-        // TODO: check if this is the correct coordinate to negate
-        return new Point3d(X, Y, -Z);
-    }
+    public readonly static JsonSerializerOptions JsonSerializerOptions
+        = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    /// <summary>
-    /// Convert (x, y, z) vector in right-handed 3-axis coordinate system to Rhino3d's left-handed coordinate system.
-    /// </summary>
-    public static Vector3d Vector3dR(double X, double Y, double Z)
+    public static Transform Inverse(Transform transform)
     {
-        return new Vector3d(Point3dR(X, Y, Z));
+        if (!transform.TryGetInverse(out var inverse))
+        {
+            throw new ArgumentException("Attempt to invert non-invertible Transform", nameof(transform));
+        }
+        return inverse;
     }
 }
 
 /// <summary>
 /// https://github.com/CesiumGS/3d-tiles/tree/main/specification#box <br />
 /// A bounding box that is not necessarily aligned to the X, Y or Z axis.
-/// This is represented by Rhino3d's Box rather than its BoundingBox.
+/// This is represented by Rhino3d's Box rather than BoundingBox.
 /// </summary>
 /// <param name="Center">The center point of the box</param>
 /// <param name="X">The x-axis of the box</param>
 /// <param name="Y">The y-axis of the box</param>
 /// <param name="Z">The z-axis of the box</param>
-record class BoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
+public record class BoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
 {
     [JsonConstructor]
     public BoundingBox(double[] values) : this(FromArray(values)) { }
@@ -81,10 +81,10 @@ record class BoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
     {
         Helpers.Require(values.Length == 12, "Expected array of length 12", nameof(values));
 
-        var Center = Helpers.Point3dR(values[0], values[1], values[2]);
-        var X = Helpers.Vector3dR(values[3], values[4], values[5]);
-        var Y = Helpers.Vector3dR(values[6], values[7], values[8]);
-        var Z = Helpers.Vector3dR(values[9], values[10], values[11]);
+        var Center = new Point3d(values[0], values[1], values[2]);
+        var X = new Vector3d(values[3], values[4], values[5]);
+        var Y = new Vector3d(values[6], values[7], values[8]);
+        var Z = new Vector3d(values[9], values[10], values[11]);
 
         return new BoundingBox(Center, X, Y, Z);
     }
@@ -104,7 +104,7 @@ record class BoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
 /// A bounding region represented with minimum and maximum longitute and latitude (in radians)
 /// and height (metres above WGS 84 Ellipsoid: https://epsg.org/ellipsoid_7030/WGS-84.html)
 /// </summary>
-record class BoundingRegion(double West, double South, double East, double North, double MinHeight, double MaxHeight)
+public record class BoundingRegion(double West, double South, double East, double North, double MinHeight, double MaxHeight)
 {
     [JsonConstructor]
     public BoundingRegion(double[] values) : this(FromArray(values)) { }
@@ -117,7 +117,7 @@ record class BoundingRegion(double West, double South, double East, double North
     }
 }
 
-record class BoundingSphere(Point3d Center, double Radius)
+public record class BoundingSphere(Point3d Center, double Radius)
 {
     [JsonConstructor]
     public BoundingSphere(double[] values) : this(FromArray(values)) { }
@@ -126,10 +126,15 @@ record class BoundingSphere(Point3d Center, double Radius)
     {
         Helpers.Require(values.Length == 4, "Expected array of length 4", nameof(values));
 
-        var Center = Helpers.Point3dR(values[0], values[1], values[2]);
+        var Center = new Point3d(values[0], values[1], values[2]);
         var Radius = values[3];
 
         return new BoundingSphere(Center, Radius);
+    }
+
+    public Sphere AsSphere()
+    {
+        return new Sphere(Center, Radius);
     }
 }
 
@@ -137,7 +142,7 @@ record class BoundingSphere(Point3d Center, double Radius)
 /// The bounding volumne for a tile. All geometry in the tile is contained in all non-null bounding shapes.
 /// At least 1 bounding shape must be defined. To ensure at least one bounding shape is defined, you should use BoundingVolumne.NewChecked
 /// </summary>
-record class BoundingVolume(BoundingBox? Box, BoundingRegion? Region, BoundingSphere? Sphere)
+public record class BoundingVolume(BoundingBox? Box, BoundingRegion? Region, BoundingSphere? Sphere)
 {
     /// <summary>
     /// Check at least one bounding shape is set
@@ -149,8 +154,6 @@ record class BoundingVolume(BoundingBox? Box, BoundingRegion? Region, BoundingSp
             return Box is not null || Region is not null || Sphere is not null;
         }
     }
-
-    public static readonly BoundingVolume Empty = new(null, null, null);
 }
 
 // TODO: support properties
@@ -158,19 +161,49 @@ record class BoundingVolume(BoundingBox? Box, BoundingRegion? Region, BoundingSp
 /// https://github.com/CesiumGS/3d-tiles/blob/main/specification/schema/metadataEntity.schema.json <br />
 /// Metadata about a Tile or Content.
 /// </summary>
-/// <param name="class">The name of the class</param>
-record class Metadata(string @class);
+/// <param name="Class">The name of the class</param>
+public record class Metadata(string Class);
 
+/// <summary>
+/// https://github.com/CesiumGS/3d-tiles/tree/main/specification#core-refinement
+/// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-enum Refine
+public enum Refine
 {
+    /// <summary>
+    /// Add geometry from children and keep the parent's geometry
+    /// </summary>
     ADD,
+
+    /// <summary>
+    /// Replace the parent's geometry with the children's
+    /// </summary>
     REPLACE,
 }
 
-record class Content(BoundingVolume? BoundingVolume, string URI, int? Group);
+public record class Content(BoundingVolume? BoundingVolume, Uri Uri, uint? Group);
 
-record class Tile(
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum SubdivisionScheme
+{
+    QUADTREE,
+    OCTREE,
+}
+
+// TODO: implement implicit tiling
+/// <summary>
+/// A tile that might contain geometry and/or sub-tiles
+/// </summary>
+/// <param name="BoundingVolume">The bounds of this tile - all geometry for this tile
+/// and all sub-tiles is contained in this</param>
+/// <param name="ViewerRequestVolume">Geometry in this tile or sub-tiles should only be
+/// rendered when the camera is within this volume</param>
+/// <param name="GeometricError">The error in metres of this tiles simplified geometry</param>
+/// <param name="Refine">The scheme used when refining a tile with its more detailed children</param>
+/// <param name="Transform">The transform of the content and bounding boxes of this tile, relative to parent</param>
+/// <param name="Contents">The geometry stored in this tile. This may be empty.</param>
+/// <param name="Children">The children of this tile. These can generally be used to improve the level of detail.</param>
+public record class Tile(
     BoundingVolume BoundingVolume,
     BoundingVolume? ViewerRequestVolume,
     double GeometricError,
@@ -205,3 +238,84 @@ record class Tile(
     }
 }
 
+public record class Tileset(
+    double GeometricError,
+    Tile Root
+)
+{
+    public static Tileset? FromJson(string data) {
+        throw new NotImplementedException();
+    }
+};
+
+/// <summary>
+/// Class which provides context for processing tiles.
+/// </summary>
+/// <param name="BaseUri">The base URI, used to resolve relative URLs</param>
+/// <param name="Transform">The current transform from this tiles local space to global space</param>
+/// <param name="InverseTransform">The inverse of Transform</param>
+public record class TileContext(
+    Uri BaseUri,
+    Transform Transform,
+    Transform InverseTransform
+)
+{
+    // TODO: Find out what this should be
+    // TODO: should this be set based on model location
+    /// <summary>
+    /// The transform to convert from 3D Tiles space to Rhino3d space.
+    /// </summary>
+    internal static Transform BaseTransform = Transform.Identity;
+
+    public TileContext(Uri BaseUri) : this(BaseUri, BaseTransform, Helpers.Inverse(BaseTransform)) { }
+
+    /// <summary>
+    /// Create a new context for a tile.
+    /// </summary>
+    public TileContext EnterTile(Tile tile)
+    {
+        return new TileContext(BaseUri, Transform * tile.Transform, Helpers.Inverse(tile.Transform) * InverseTransform);
+    }
+
+    private double ScreenSpaceError(double geometricError, BoundingVolume boundingVolume, uint screenHeight, double fovy, Point3d camera)
+    {
+        camera = InverseTransform * camera;
+
+        double tileDistance;
+        if (boundingVolume.Sphere is not null)
+        {
+            var centerDist = boundingVolume.Sphere.Center.DistanceTo(camera);
+            tileDistance = Math.Max(centerDist - boundingVolume.Sphere.Radius, 0);
+        }
+        else if (boundingVolume.Box is not null)
+        {
+            var closest = boundingVolume.Box.AsBox().ClosestPoint(camera);
+            tileDistance = closest.DistanceTo(camera);
+        }
+        else
+        {
+            // TODO: make this work
+            throw new NotImplementedException("BoundingRegion support has not been added yet");
+        }
+
+        return geometricError * screenHeight / (tileDistance * 2 * Math.Tan(fovy / 2));
+
+    }
+
+    /// <summary>
+    /// Compute the screen space error for this tile.
+    /// </summary>
+    /// <param name="screenHeight">The height of the screen in pixels</param>
+    /// <param name="fovy">The field-of-view angle in radians in the y direction</param>
+    /// <param name="camera">The location of the camera</param>
+    /// <returns></returns>
+    public double ScreenSpaceError(Tile tile, uint screenHeight, double fovy, Point3d camera)
+    {
+        return ScreenSpaceError(tile.GeometricError, tile.BoundingVolume, screenHeight, fovy, camera);
+    }
+
+    public double ScreenSpaceError(Tileset tileset, uint screenHeight, double fovy, Point3d camera)
+    {
+        return ScreenSpaceError(tileset.GeometricError, tileset.Root.BoundingVolume, screenHeight, fovy, camera);
+    }
+}
