@@ -15,10 +15,6 @@ namespace LoadTiles
         private readonly HttpClient _cesiumClient, _gmapsClient;
         public LoadTilesCommand()
         {
-            // Rhino only creates one instance of each command class defined in a
-            // plug-in, so it is safe to store a refence in a static property.
-            Instance = this;
-
             // Initialise Http Clients
             _cesiumClient = new HttpClient(){
                 BaseAddress = new Uri("https://api.cesium.com"),
@@ -27,9 +23,6 @@ namespace LoadTiles
                 BaseAddress = new Uri("https://tile.googleapis.com"),
             };
         }
-
-        ///<summary>The only instance of this command.</summary>
-        public static LoadTilesCommand Instance { get; private set; }
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
         public override string EnglishName => "Fetch";
