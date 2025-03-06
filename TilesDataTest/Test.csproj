@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <!-- <IsTestProject>true</IsTestProject> -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <!-- <PackageReference Include="MSTest.TestAdapter" Version="3.0.4" /> -->
+    <!-- <PackageReference Include="MSTest.TestFramework" Version="3.0.4" /> -->
+    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Rhino.Testing" Version="8.0.23-beta" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TilesData\TilesData.csproj" />
+  </ItemGroup>
+
+</Project>
