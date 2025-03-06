@@ -7,7 +7,7 @@
         Rhino 8 Windows: net48, net7.0, net7.0-windows, net7.0-windows10.0.22000.0, etc
         Rhino 8 Mac: net7.0, net7.0-macos, net7.0-macos12.0, etc
     -->
-    <TargetFrameworks>net7.0;net48</TargetFrameworks>
+    <TargetFramework>net7.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <TargetExt>.rhp</TargetExt>
     <NoWarn>NU1701</NoWarn>
@@ -25,7 +25,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="RhinoCommon" Version="8.0.23304.9001" ExcludeAssets="runtime" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
-    <Reference Include="System.Web" />
   </ItemGroup>
   
 </Project>
