@@ -8,4 +8,4 @@ When prompted, enter your Cesium Ion access token - which you can configure [her
 
 Wait for a message on the Rhino command line that says "Import succeeded".
 
-Now, input "_Zoom" and select "Extents". You should see some segment of the globe appear in the window.
+Now, input "_Zoom", select "All", then select "Extents". You should see some segment of the globe appear in the window.

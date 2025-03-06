@@ -111,11 +111,7 @@ namespace LoadTiles
             // Read GLB from temp file
             bool importSuccess = doc.Import(tempPath);
             RhinoApp.WriteLine(importSuccess ? "Import succeeded." : "Import failed.");
-            /* Note: At this point if the data is not showing up in the application even though the import was successful,
-             * it is possible the data loaded was too large for the viewport.
-             * In the Rhino command line, input this:
-             *   _Zoom
-             * And then select "Extent".
+            /* Note: At this point if the object is not showing up, read the README for troubleshooting :)
              */
         }
 
