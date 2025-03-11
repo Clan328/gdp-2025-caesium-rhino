@@ -3,21 +3,31 @@ namespace Test
     using System.Text.Json;
     using NUnit.Framework;
     using Rhino.Testing.Fixtures;
+    using Rhino.Geometry;
     using TilesData;
 
     [RhinoTestFixture]
     public class JsonDeser
     {
         [Test]
-        public void BoundingVolumeShouldParse()
+        [TestCaseSource(nameof(BoundingVolumeJson))]
+        public void BoundingVolumeShouldParse(string json, BoundingVolume? expected)
         {
-            string[] tests = { """{ "sphere": [0.1, 0.4, 0.2, 0.5] }""" };
+            var result = JsonSerializer.Deserialize<BoundingVolume>(json);
+            Assert.IsNotNull(result);
+            if (expected is not null) Assert.AreEqual(result, expected);
+        }
 
-            foreach (string test in tests)
-            {
-                var result = JsonSerializer.Deserialize<BoundingVolume>(test);
-                Assert.IsNotNull(result);
-            }
+        public static IEnumerable<TestCaseData> BoundingVolumeJson()
+        {
+            yield return new TestCaseData(
+                """{ "sphere": [0.1, 0.4, 0.2, 0.5] }""",
+                new BoundingVolume(new BoundingSphere(new Point3d(0.1, 0.4, 0.2), 0.5))
+            );
+            yield return new TestCaseData(
+                """{ "region": [2.5, 2.504, -1.4, -1.398, 20, 300] }""",
+                new BoundingVolume(new BoundingRegion(2.5, 2.504, -1.4, -1.398, 20, 300))
+            );
         }
     }
 }

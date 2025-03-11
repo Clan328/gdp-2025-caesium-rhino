@@ -1,21 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-
+    <TargetFramework Condition="$([MSBuild]::IsOSPlatform('Windows'))">net7.0-windows</TargetFramework>
     <IsPackable>false</IsPackable>
-    <!-- <IsTestProject>true</IsTestProject> -->
+    <RhinoSystemDirectory>C:\Program Files\Rhino 8\System</RhinoSystemDirectory>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <!-- <PackageReference Include="MSTest.TestAdapter" Version="3.0.4" /> -->
     <!-- <PackageReference Include="MSTest.TestFramework" Version="3.0.4" /> -->
-    <PackageReference Include="coverlet.collector" Version="3.1.2" />
+    <!-- <PackageReference Include="coverlet.collector" Version="3.1.2" /> -->
     <PackageReference Include="NUnit" Version="3.14.0" />
-    <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
+    <!-- <PackageReference Include="NUnit.Analyzers" Version="3.3.0" /> -->
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
     <PackageReference Include="Rhino.Testing" Version="8.0.23-beta" />
   </ItemGroup>
@@ -24,4 +20,15 @@
     <ProjectReference Include="..\TilesData\TilesData.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition=" $(TargetFramework.Contains('net7.0')) == 'true'">
+    <Reference Include="$(RhinoSystemDirectory)\netcore\RhinoCommon.dll" Private="False" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" $(TargetFramework.Contains('net48')) == 'true'">
+    <Reference Include="$(RhinoSystemDirectory)\RhinoCommon.dll" Private="False" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Rhino.Testing.Configs.xml" CopyToOutputDirectory="always" />
+  </ItemGroup>
 </Project>
