@@ -47,12 +47,6 @@ static class Helpers
         };
     }
 
-    /// <summary>
-    /// Default JsonSerializerOptions for deserialising Tiles3D json.
-    /// </summary>
-    public readonly static JsonSerializerOptions JsonSerializerOptions
-        = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-
     public static Transform Inverse(Transform transform)
     {
         if (!transform.TryGetInverse(out var inverse))
@@ -155,9 +149,18 @@ public record class BoundingVolume(TileBoundingBox? Box, BoundingRegion? Region,
         }
     }
 
-    public BoundingVolume(TileBoundingBox Box) : this(Box, null, null) { }
-    public BoundingVolume(BoundingRegion Region) : this(null, Region, null) { }
-    public BoundingVolume(BoundingSphere Sphere) : this(null, null, Sphere) { }
+    public static BoundingVolume From(TileBoundingBox Box)
+    {
+        return new BoundingVolume(Box, null, null);
+    }
+    public static BoundingVolume From(BoundingRegion Region)
+    {
+        return new BoundingVolume(null, Region, null);
+    }
+    public static BoundingVolume From(BoundingSphere Sphere)
+    {
+        return new BoundingVolume(null, null, Sphere);
+    }
 }
 
 // TODO: support properties
@@ -247,6 +250,14 @@ public record class Tileset(
     Tile Root
 )
 {
+    /// <summary>
+    /// Default JsonSerializerOptions for deserialising Tiles3D json.
+    /// </summary>
+    public readonly static JsonSerializerOptions JsonSerializerOptions
+        = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+
+
     public static Tileset? FromJson(string data)
     {
         throw new NotImplementedException();
