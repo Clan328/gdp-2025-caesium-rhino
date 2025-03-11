@@ -72,12 +72,12 @@ static class Helpers
 /// <param name="X">The x-axis of the box</param>
 /// <param name="Y">The y-axis of the box</param>
 /// <param name="Z">The z-axis of the box</param>
-public record class BoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
+public record class TileBoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
 {
     [JsonConstructor]
-    public BoundingBox(double[] values) : this(FromArray(values)) { }
+    public TileBoundingBox(double[] values) : this(FromArray(values)) { }
 
-    public static BoundingBox FromArray(double[] values)
+    public static TileBoundingBox FromArray(double[] values)
     {
         Helpers.Require(values.Length == 12, "Expected array of length 12", nameof(values));
 
@@ -86,7 +86,7 @@ public record class BoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d
         var Y = new Vector3d(values[6], values[7], values[8]);
         var Z = new Vector3d(values[9], values[10], values[11]);
 
-        return new BoundingBox(Center, X, Y, Z);
+        return new TileBoundingBox(Center, X, Y, Z);
     }
 
     public Box AsBox()
@@ -142,7 +142,7 @@ public record class BoundingSphere(Point3d Center, double Radius)
 /// The bounding volumne for a tile. All geometry in the tile is contained in all non-null bounding shapes.
 /// At least 1 bounding shape must be defined. To ensure at least one bounding shape is defined, you should use BoundingVolumne.NewChecked
 /// </summary>
-public record class BoundingVolume(BoundingBox? Box, BoundingRegion? Region, BoundingSphere? Sphere)
+public record class BoundingVolume(TileBoundingBox? Box, BoundingRegion? Region, BoundingSphere? Sphere)
 {
     /// <summary>
     /// Check at least one bounding shape is set
@@ -154,6 +154,10 @@ public record class BoundingVolume(BoundingBox? Box, BoundingRegion? Region, Bou
             return Box is not null || Region is not null || Sphere is not null;
         }
     }
+
+    public BoundingVolume(TileBoundingBox Box) : this(Box, null, null) { }
+    public BoundingVolume(BoundingRegion Region) : this(null, Region, null) { }
+    public BoundingVolume(BoundingSphere Sphere) : this(null, null, Sphere) { }
 }
 
 // TODO: support properties
@@ -243,7 +247,8 @@ public record class Tileset(
     Tile Root
 )
 {
-    public static Tileset? FromJson(string data) {
+    public static Tileset? FromJson(string data)
+    {
         throw new NotImplementedException();
     }
 };
