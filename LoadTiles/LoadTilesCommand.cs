@@ -3,7 +3,7 @@ using Rhino.Commands;
 using Rhino.Input.Custom;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 using System.Web;
 using System;
 using System.IO;
@@ -32,10 +32,10 @@ namespace LoadTiles
         /// </summary>
         /// <param name="client">Http client to make the API call</param>
         /// <param name="url">Link to the API</param>
-        /// <returns>Newtonsoft JObject representing the JSON returned</returns>
-        private JObject fetchJsonFromAPI(HttpClient client, string url) {
+        /// <returns>JsonDocument representing the JSON returned</returns>
+        private JsonDocument fetchJsonFromAPI(HttpClient client, string url) {
             string response = client.GetStringAsync(url).Result;
-            return JObject.Parse(response);
+            return JsonDocument.Parse(response);
         }
 
         /// <summary>
@@ -59,9 +59,12 @@ namespace LoadTiles
             string googleMapsAssetID = "2275207";  // I'm not sure if this is the same ID for everyone's Cesium Ion account.
             string url = $"/v1/assets/{googleMapsAssetID}/endpoint";
             // Fetch data
-            JObject response = fetchJsonFromAPI(client, url);
+            using JsonDocument doc = fetchJsonFromAPI(client, url);
             // Extract link to Google Maps API (which comes with the key)
-            string urlWithKey = response["options"]?["url"]?.ToString();
+            string urlWithKey = doc.RootElement
+                                   .GetProperty("options")
+                                   .GetProperty("url")
+                                   .ToString();
             // Extract key (which is a query parameter) from the URL
             string key = HttpUtility.ParseQueryString(new Uri(urlWithKey).Query)["key"];
             return key;
@@ -77,10 +80,16 @@ namespace LoadTiles
             HttpClient client = _gmapsClient;
 
             // 1st API call, to the root
-            JObject root = fetchJsonFromAPI(client, $"/v1/3dtiles/root.json?key={key}");
+            using JsonDocument root = fetchJsonFromAPI(client, $"/v1/3dtiles/root.json?key={key}");
             // We dive down several layers straight away - to the only follow-up API link that appears in the call to the root
             // This link included in the JSON response is special - it contains a session token, which must be included in all further API calls (to non-root nodes)
-            string nextPathWithSession = root["root"]?["children"]?[0]["children"]?[0]["content"]?["uri"]?.ToString();
+            string nextPathWithSession = root.RootElement
+                                             .GetProperty("root")
+                                             .GetProperty("children")[0]
+                                             .GetProperty("children")[0]
+                                             .GetProperty("content")
+                                             .GetProperty("uri")
+                                             .ToString();
             // The following lines simply manipulate the URL to extract both the left part (without the session) and the session token separately
             string urlWithSession = client.BaseAddress + nextPathWithSession;
             Uri uriWithSession = new Uri(urlWithSession);
@@ -90,17 +99,16 @@ namespace LoadTiles
             /* What follows is just test code to find some sample GLB to import and render
              * TODO: Given lat and long, navigate the data, making further API calls as needed, to find the right GLB tile(s)
              */
-            JObject obj = fetchJsonFromAPI(client, $"{url}?key={key}&session={session}");  // Pattern for each subsequent API call (notice the session token has to be included)
-            
-            // Some segment of the globe (uncomment either this or the block below)
-            url = obj["root"]?["children"]?[0]["children"]?[0]["content"]?["uri"]?.ToString();
+            using JsonDocument obj = fetchJsonFromAPI(client, $"{url}?key={key}&session={session}");  // Pattern for each subsequent API call (notice the session token has to be included)
+            // Some segment of the globe
+            url = obj.RootElement
+                     .GetProperty("root")
+                     .GetProperty("children")[0]
+                     .GetProperty("children")[0]
+                     .GetProperty("content")
+                     .GetProperty("uri")
+                     .ToString();
             byte[] glbBytes = fetchGLBFromAPI(client, $"{url}?key={key}&session={session}");
-
-            // Some other segment of the globe (uncomment either this or the block above)
-            // url = obj["root"]?["children"]?[3]["children"]?[0]["children"]?[0]["children"]?[0]["children"]?[0]["content"]?["uri"]?.ToString();
-            // obj = fetchJsonFromAPI(client, $"{url}?key={key}&session={session}");
-            // url = obj["root"]?["children"]?[0]["children"]?[0]["children"]?[0]["children"]?[0]["content"]?["uri"]?.ToString();
-            // byte[] glbBytes = fetchGLBFromAPI(client, $"{url}?key={key}&session={session}");
 
             // Write the fetched GLB to a temp file
             // TODO: Other ways of loading data without saving to a file?
