@@ -1,10 +1,8 @@
-﻿namespace TilesData;
-
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rhino.Geometry;
-using TilesData.Json;
+
+namespace TilesData;
 
 static class Helpers
 {
