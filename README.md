@@ -1,4 +1,4 @@
-# Getting started
+# Getting started with LoadTiles plugin
 Open the repo directory in VS Code, then use the "Run and Debug" feature (look for it on the sidebar, then look for "Rhino 8 - netcore" in the run and debug configurations).
 It should open an instance of Rhino with the plugin loaded.
 
