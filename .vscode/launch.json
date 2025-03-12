@@ -19,9 +19,9 @@
         ]
       },
       "env": {
-        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/bin/Debug"
+        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/LoadTiles/bin/Debug"
       },
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/LoadTiles",
       "stopAtEntry": false,
       "console": "internalConsole"
     },
@@ -38,9 +38,9 @@
         ]
       },
       "env": {
-        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/bin/Debug"
+        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/LoadTiles/bin/Debug"
       },
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/LoadTiles",
       "stopAtEntry": false,
       "console": "internalConsole"
     },
