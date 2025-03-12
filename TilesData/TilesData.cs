@@ -1,8 +1,10 @@
 ﻿namespace TilesData;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rhino.Geometry;
+using TilesData.Json;
 
 static class Helpers
 {
@@ -22,10 +24,23 @@ static class Helpers
     }
 
     /// <summary>
+    /// Create a list containing a single item.
+    /// </summary>
+    public static List<T> Singleton<T>(T item)
+    {
+        return new List<T>(1)
+        {
+            item
+        };
+    }
+
+    /// <summary>
     /// Convert a matrix stored in column major order to a Transform
     /// </summary>
-    public static Transform ColumnMajor(double[] data)
+    public static Transform ColumnMajor(List<double> data)
     {
+        Require(data.Count == 16, "Expected list of length 16", nameof(data));
+
         return new Transform
         {
             M00 = data[0],
@@ -68,12 +83,9 @@ static class Helpers
 /// <param name="Z">The z-axis of the box</param>
 public record class TileBoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
 {
-    [JsonConstructor]
-    public TileBoundingBox(double[] values) : this(FromArray(values)) { }
-
-    public static TileBoundingBox FromArray(double[] values)
+    public static TileBoundingBox FromArray(List<double> values)
     {
-        Helpers.Require(values.Length == 12, "Expected array of length 12", nameof(values));
+        Helpers.Require(values.Count == 12, "Expected list of length 12", nameof(values));
 
         var Center = new Point3d(values[0], values[1], values[2]);
         var X = new Vector3d(values[3], values[4], values[5]);
@@ -100,12 +112,9 @@ public record class TileBoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vect
 /// </summary>
 public record class BoundingRegion(double West, double South, double East, double North, double MinHeight, double MaxHeight)
 {
-    [JsonConstructor]
-    public BoundingRegion(double[] values) : this(FromArray(values)) { }
-
-    public static BoundingRegion FromArray(double[] values)
+    public static BoundingRegion FromArray(List<double> values)
     {
-        Helpers.Require(values.Length == 6, "Expected array of length 6", nameof(values));
+        Helpers.Require(values.Count == 6, "Expected list of length 6", nameof(values));
 
         return new BoundingRegion(values[0], values[1], values[2], values[3], values[4], values[5]);
     }
@@ -113,12 +122,9 @@ public record class BoundingRegion(double West, double South, double East, doubl
 
 public record class BoundingSphere(Point3d Center, double Radius)
 {
-    [JsonConstructor]
-    public BoundingSphere(double[] values) : this(FromArray(values)) { }
-
-    public static BoundingSphere FromArray(double[] values)
+    public static BoundingSphere FromArray(List<double> values)
     {
-        Helpers.Require(values.Length == 4, "Expected array of length 4", nameof(values));
+        Helpers.Require(values.Count == 4, "Expected list of length 4", nameof(values));
 
         var Center = new Point3d(values[0], values[1], values[2]);
         var Radius = values[3];
@@ -133,11 +139,20 @@ public record class BoundingSphere(Point3d Center, double Radius)
 }
 
 /// <summary>
-/// The bounding volumne for a tile. All geometry in the tile is contained in all non-null bounding shapes.
-/// At least 1 bounding shape must be defined. To ensure at least one bounding shape is defined, you should use BoundingVolumne.NewChecked
+/// The bounding volumne for a tile or content.
+///
+/// For tiles, all geometry in the tile or its descendents is contained in all non-null bounding shapes.
+/// For content, this only contains the geometry of this content - this can be used to cull of-screen content.
 /// </summary>
 public record class BoundingVolume(TileBoundingBox? Box, BoundingRegion? Region, BoundingSphere? Sphere)
 {
+    public BoundingVolume(Json.BoundingVolume? volume) : this(
+        volume?.Box is null ? null : TileBoundingBox.FromArray(volume.Box),
+        volume?.Region is null ? null : BoundingRegion.FromArray(volume.Region),
+        volume?.Sphere is null ? null : BoundingSphere.FromArray(volume.Sphere)
+    )
+    { }
+
     /// <summary>
     /// Check at least one bounding shape is set
     /// </summary>
@@ -149,27 +164,10 @@ public record class BoundingVolume(TileBoundingBox? Box, BoundingRegion? Region,
         }
     }
 
-    public static BoundingVolume From(TileBoundingBox Box)
-    {
-        return new BoundingVolume(Box, null, null);
-    }
-    public static BoundingVolume From(BoundingRegion Region)
-    {
-        return new BoundingVolume(null, Region, null);
-    }
-    public static BoundingVolume From(BoundingSphere Sphere)
-    {
-        return new BoundingVolume(null, null, Sphere);
-    }
+    public BoundingVolume(TileBoundingBox Box) : this(Box, null, null) { }
+    public BoundingVolume(BoundingRegion Region) : this(null, Region, null) { }
+    public BoundingVolume(BoundingSphere Sphere) : this(null, null, Sphere) { }
 }
-
-// TODO: support properties
-/// <summary>
-/// https://github.com/CesiumGS/3d-tiles/blob/main/specification/schema/metadataEntity.schema.json <br />
-/// Metadata about a Tile or Content.
-/// </summary>
-/// <param name="Class">The name of the class</param>
-public record class Metadata(string Class);
 
 /// <summary>
 /// https://github.com/CesiumGS/3d-tiles/tree/main/specification#core-refinement
@@ -188,7 +186,26 @@ public enum Refine
     REPLACE,
 }
 
-public record class Content(BoundingVolume? BoundingVolume, Uri Uri, uint? Group);
+/// <summary>
+/// Content of a tile.
+/// </summary>
+/// <param name="BoundingVolume">This is never null. Check if this is missing using the BoundingVolume.IsSet method.</param>
+/// <param name="Uri"></param>
+/// <param name="Group"></param>
+public record class Content(
+    BoundingVolume BoundingVolume,
+    Uri Uri,
+    uint Group = 0
+)
+{
+    // TODO: resolve uri
+    public Content(Json.Content content) : this(
+        new BoundingVolume(content.BoundingVolume),
+        content.Uri,
+        content.Group ?? 0
+    )
+    { }
+}
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SubdivisionScheme
@@ -196,6 +213,12 @@ public enum SubdivisionScheme
     QUADTREE,
     OCTREE,
 }
+
+public record class TileParseContext(
+    Refine Refine,
+    Transform Transform,
+    Uri BaseUri
+);
 
 // TODO: implement implicit tiling
 /// <summary>
@@ -207,41 +230,57 @@ public enum SubdivisionScheme
 /// rendered when the camera is within this volume</param>
 /// <param name="GeometricError">The error in metres of this tiles simplified geometry</param>
 /// <param name="Refine">The scheme used when refining a tile with its more detailed children</param>
-/// <param name="Transform">The transform of the content and bounding boxes of this tile, relative to parent</param>
+/// <param name="LocalTransform">The transform of the content and bounding boxes of this tile, relative to parent</param>
+/// <param name="GlobalTransform">The transform of the content and bounding boxes relative to the tileset</param>
 /// <param name="Contents">The geometry stored in this tile. This may be empty.</param>
 /// <param name="Children">The children of this tile. These can generally be used to improve the level of detail.</param>
 public record class Tile(
     BoundingVolume BoundingVolume,
     BoundingVolume? ViewerRequestVolume,
     double GeometricError,
-    Refine? Refine,
-    Transform Transform,
-    Content[] Contents,
-    Tile[] Children
+    Refine Refine,
+    Transform LocalTransform,
+    Transform GlobalTransform,
+    List<Content> Contents,
+    List<Tile> Children
 )
 {
-    [JsonConstructor]
-    public Tile(
-        BoundingVolume boundingVolume,
-        BoundingVolume? viewerRequestVolume,
-        double geometricError,
-        Refine? refine,
-        Transform? transform,
-        Content? content,
-        Content[]? contents,
-        Tile[]? children
-    )
-        : this(
-            boundingVolume,
-            viewerRequestVolume,
-            geometricError,
-            refine,
-            transform ?? Transform.Identity,
-            content is null ? (contents ?? Array.Empty<Content>()) : new Content[] { content },
-            children ?? Array.Empty<Tile>()
-        )
+    public static Tile FromJson(Json.Tile tile, TileParseContext ctx)
     {
-        Helpers.Require(geometricError >= 0, "geometricError must be non-negative", nameof(geometricError));
+        var LocalTransform = tile.Transform is null ? Transform.Identity : Helpers.ColumnMajor(tile.Transform);
+        var GlobalTransform = ctx.Transform * LocalTransform;
+        var Refine = tile.Refine ?? ctx.Refine;
+
+        List<Content> Contents;
+        if (tile.Contents is not null)
+        {
+            Contents = tile.Contents.ConvertAll(content => new Content(content));
+        }
+        else if (tile.Content is not null)
+        {
+            Contents = Helpers.Singleton(new Content(tile.Content));
+        }
+        else
+        {
+            Contents = new List<Content>();
+        }
+
+        var ctx1 = new TileParseContext(Refine, GlobalTransform, ctx.BaseUri);
+
+        var Children = tile.Children is null
+            ? new List<Tile>()
+            : tile.Children.ConvertAll(child => FromJson(child, ctx1));
+
+        return new Tile(
+            new BoundingVolume(tile.BoundingVolume),
+            new BoundingVolume(tile.ViewerRequestVolume),
+            tile.GeometricError,
+            tile.Refine ?? ctx.Refine,
+            LocalTransform,
+            GlobalTransform,
+            Contents,
+            Children
+        );
     }
 }
 
@@ -250,19 +289,33 @@ public record class Tileset(
     Tile Root
 )
 {
-    /// <summary>
-    /// Default JsonSerializerOptions for deserialising Tiles3D json.
-    /// </summary>
-    public readonly static JsonSerializerOptions JsonSerializerOptions
-        = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-
-
-
-    public static Tileset? FromJson(string data)
+    public static Tileset FromJson(Json.Tileset tileset, Uri uri)
     {
-        throw new NotImplementedException();
+        var refine = tileset.Root.Refine ?? Refine.ADD;
+        var ctx = new TileParseContext(refine, Transform.Identity, uri);
+        var root = Tile.FromJson(tileset.Root, ctx);
+
+        return new Tileset(tileset.GeometricError, root);
     }
-};
+
+    public static Tileset Deserialize(ReadOnlySpan<byte> data, Uri uri)
+    {
+        var raw = Json.Tileset.FromJson(data)
+            ?? throw new JsonException("JSON deserialisation returned null");
+        return FromJson(raw, uri);
+    }
+
+    public static Tileset Deserialize(string data, Uri uri)
+    {
+        var raw = Json.Tileset.FromJson(data)
+            ?? throw new JsonException("JSON deserialisation returned null");
+        return FromJson(raw, uri);
+    }
+}
+
+
+/*
+TODO: port these to new representation
 
 /// <summary>
 /// Class which provides context for processing tiles.
@@ -335,3 +388,4 @@ public record class TileContext(
         return ScreenSpaceError(tileset.GeometricError, tileset.Root.BoundingVolume, screenHeight, fovy, camera);
     }
 }
+*/
