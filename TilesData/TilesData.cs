@@ -93,6 +93,10 @@ public record class TileBoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vect
         return new TileBoundingBox(Center, X, Y, Z);
     }
 
+    public static bool IsInBox(TileBoundingBox box, Point3d point) {
+        return box.AsBox().Contains(point);
+    }
+
     public Box AsBox()
     {
         var plane = new Plane(Center, X, Y);
