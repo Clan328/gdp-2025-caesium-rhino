@@ -15,6 +15,7 @@ namespace LoadTiles
     public class LoadTilesCommand : Command
     {
         private readonly HttpClient _cesiumClient, _gmapsClient;
+        private string key, session, url;  // For calls to the *Google Maps 3D Tiles* API, not Cesium
         public LoadTilesCommand()
         {
             // Initialise Http Clients
@@ -24,6 +25,12 @@ namespace LoadTiles
             _gmapsClient = new HttpClient(){
                 BaseAddress = new Uri("https://tile.googleapis.com"),
             };
+
+            // Initialise Google Maps 3D Tiles API parameters
+            DotNetEnv.Env.TraversePath().Load();
+            key = DotNetEnv.Env.GetString("GMAPS_KEY");
+            session = DotNetEnv.Env.GetString("GMAPS_SESSION");
+            url = DotNetEnv.Env.GetString("GMAPS_URL");
         }
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
@@ -106,12 +113,9 @@ namespace LoadTiles
         /// Navigates the asset tree to find the tile at a sufficient level of detail at the specified location.
         /// </summary>
         /// <param name="point">Location that the tile should match</param>
-        /// <param name="key">Google Maps API key</param>
-        /// <param name="session">Google Maps API session token</param>
-        /// <param name="url">Relative URL of the base API call</param>
         /// <param name="geometricError">Upper bound of geometric error of target tile</param>
         /// <returns>Tile at specified location</returns>
-        private Tile FetchTile(Point3d point, string key, string session, string url, double geometricErrorLimit) {
+        private Tile FetchTile(Point3d point, double geometricErrorLimit) {
             HttpClient client = _gmapsClient;
             string response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
             Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Relative));
@@ -138,7 +142,7 @@ namespace LoadTiles
                     }
                     // We are done if either of these are true
                     //   - nextTile == null implying our target point is not in the bounds of any child tile
-                    //   - nextTile.GeometricError < geometricError implying we have found a tile at the sufficient level of detail
+                    //   - nextTile.GeometricError < geometricErrorLimit implying we have found a tile at the sufficient level of detail
                     if (nextTile == null || nextTile.GeometricError < geometricErrorLimit) done = true;
                     if (nextTile != null) tile = nextTile;
                 }
@@ -157,10 +161,8 @@ namespace LoadTiles
         /// Fetch a GLB file from the API, and imports it into the Rhino window.
         /// </summary>
         /// <param name="doc">Active document</param>
-        /// <param name="key">Google Maps API key</param>
-        /// <param name="session">Google Maps API session token</param>
         /// <param name="url">Relative path of API (this should be a .glb link)</param>
-        private void FetchAndLoadGLB(RhinoDoc doc, string key, string session, string url) {
+        private void FetchAndLoadGLB(RhinoDoc doc, string url) {
             byte[] glbBytes = fetchGLBFromAPI(_gmapsClient, $"{url}?key={key}&session={session}");
 
             string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
@@ -189,10 +191,6 @@ namespace LoadTiles
              * GMAPS_SESSION="something"
              * GMAPS_URL="something"
              */
-            DotNetEnv.Env.TraversePath().Load();
-            string key = DotNetEnv.Env.GetString("GMAPS_KEY");
-            string session = DotNetEnv.Env.GetString("GMAPS_SESSION");
-            string url = DotNetEnv.Env.GetString("GMAPS_URL");;
             bool valuesNotInitialised = key == null || session == null || url == null;
 
             if (valuesNotInitialised) {
@@ -217,9 +215,9 @@ namespace LoadTiles
             double altitude = 60;  // Chosen arbitrarily
             double geometricErrorLimit = 100;  // Chosen arbitrarily, but should fetch a tile at a decent zoom level
 
-            Tile tile = FetchTile(Helper.LatLonToEPSG4978(lat, lon, altitude), key, session, url, geometricErrorLimit);
+            Tile tile = FetchTile(Helper.LatLonToEPSG4978(lat, lon, altitude), geometricErrorLimit);
             url = tile.Contents[0].Uri.ToString();
-            FetchAndLoadGLB(doc, key, session, url);
+            FetchAndLoadGLB(doc, url);
             return Result.Success;
         }
     }
