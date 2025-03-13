@@ -158,21 +158,36 @@ namespace LoadTiles
         }
 
         /// <summary>
-        /// Fetch a GLB file from the API, and imports it into the Rhino window.
+        /// Loads and imports the GLB associated with the given tile.
         /// </summary>
         /// <param name="doc">Active document</param>
-        /// <param name="url">Relative path of API (this should be a .glb link)</param>
-        private void FetchAndLoadGLB(RhinoDoc doc, string url) {
-            byte[] glbBytes = fetchGLBFromAPI(_gmapsClient, $"{url}?key={key}&session={session}");
+        /// <param name="tile">Tile to load</param>
+        /// <returns>Whether the import was successful.</returns>
+        private bool LoadGLB(RhinoDoc doc, Tile tile) {
+            string glbLink = tile.Contents[0].Uri.ToString();
+            byte[] glbBytes = fetchGLBFromAPI(_gmapsClient, $"{glbLink}?key={key}&session={session}");
 
             string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
             File.WriteAllBytes(tempPath, glbBytes);
 
             // Read GLB from temp file
-            bool importSuccess = doc.Import(tempPath);
-            // Zooms out so that the rendered tile fits in view.
+            return doc.Import(tempPath);
+        }
+
+        /// <summary>
+        /// Loads the data at the subtree rooted at the given tile.
+        /// </summary>
+        /// <param name="doc">Active document</param>
+        /// <param name="tile">Root tile</param>
+        private void LoadTile(RhinoDoc doc, Tile tile) {
+            // This is very basic. Its children are loaded.
+            // TODO: Load its descendants, taking care to respect "REPLACE" or "ADD" refinement effects.
+            // TODO: Translate everything to the origin in the application's coordinate system.
+            foreach (Tile childTile in tile.Children) {
+                LoadGLB(doc, childTile);
+            }
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
-            RhinoApp.WriteLine(importSuccess ? "Import succeeded." : "Import failed.");
+            RhinoApp.WriteLine("Loaded.");
         }
 
         /// <summary>
@@ -216,8 +231,7 @@ namespace LoadTiles
             double geometricErrorLimit = 100;  // Chosen arbitrarily, but should fetch a tile at a decent zoom level
 
             Tile tile = FetchTile(Helper.LatLonToEPSG4978(lat, lon, altitude), geometricErrorLimit);
-            url = tile.Contents[0].Uri.ToString();
-            FetchAndLoadGLB(doc, url);
+            LoadTile(doc, tile);
             return Result.Success;
         }
     }
