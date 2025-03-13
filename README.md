@@ -6,12 +6,15 @@ In Rhino's command line (which should be positioned near the top of the window),
 
 When prompted, enter your Cesium Ion access token - which you can configure [here](https://ion.cesium.com/tokens).
 
-Wait for a message on the Rhino command line that says "Import succeeded".
+For convenience, you should create a `.env` file in this root directory storing your API query parameters for Google Maps' API. More details in the comment in the `RunCommand` method in `LoadTiles/LoadTilesCommand.cs`.
 
 ## LoadTiles/sampletileset.json
 This is a sample JSON response from Google Maps 3D tiles - to test (and save on API calls!)
 
 ## LoadTiles/LoadTilesCommand.cs
 This is where most of the work on the plugin side of the project currently lies.
-TODO (Critical):
-- Load more than one GLB tile at a time
+
+TODO:
+- Selectively load the descendants of a tile
+- Translate the loaded tiles to the origin in the application's coordinate system
+- Incorporate the GUI's functionality to have the user input the latitude and longitude
