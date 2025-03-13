@@ -184,13 +184,16 @@ namespace LoadTiles
              * In order to save on API calls since Cesium Ion has a usage limit,
              * it is recommended that you copy the console output of the key, session and url
              * from the code block below, then save these values for your own subsequent API calls.
-             * If you do so, set `valuesNotInitialised` to false so the initial call to Cesium Ion doesn't
-             * occur again. Be careful not to commit your API key to the repo.
+             * To do so, create a .env file in the repo directory, and fill in the values in this format:
+             * GMAPS_KEY="something"
+             * GMAPS_SESSION="something"
+             * GMAPS_URL="something"
              */
-            string key = "";
-            string session = "";
-            string url = "";
-            bool valuesNotInitialised = true;
+            DotNetEnv.Env.TraversePath().Load();
+            string key = DotNetEnv.Env.GetString("GMAPS_KEY");
+            string session = DotNetEnv.Env.GetString("GMAPS_SESSION");
+            string url = DotNetEnv.Env.GetString("GMAPS_URL");;
+            bool valuesNotInitialised = key == null || session == null || url == null;
 
             if (valuesNotInitialised) {
                 string tok = "";
