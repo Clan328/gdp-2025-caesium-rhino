@@ -190,7 +190,7 @@ namespace LoadTiles
             string key = "";
             string session = "";
             string url = "";
-            bool valuesNotInitialised = false;
+            bool valuesNotInitialised = true;
 
             if (valuesNotInitialised) {
                 string tok = "";
