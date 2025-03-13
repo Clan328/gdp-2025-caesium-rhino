@@ -7,6 +7,8 @@ using System.Text.Json;
 using System.Web;
 using System;
 using System.IO;
+using TilesData;
+using Rhino.Geometry;
 
 namespace LoadTiles
 {
@@ -34,8 +36,7 @@ namespace LoadTiles
         /// <param name="url">Link to the API</param>
         /// <returns>JsonDocument representing the JSON returned</returns>
         private JsonDocument fetchJsonFromAPI(HttpClient client, string url) {
-            string response = client.GetStringAsync(url).Result;
-            return JsonDocument.Parse(response);
+            return JsonDocument.Parse(fetchStringFromAPI(client, url));
         }
 
         /// <summary>
@@ -46,6 +47,16 @@ namespace LoadTiles
         /// <returns>Byte array representing the GLB file</returns>
         private byte[] fetchGLBFromAPI(HttpClient client, string url) {
             return client.GetByteArrayAsync(url).Result;
+        }
+
+        /// <summary>
+        /// Makes an API call to retrieve a string
+        /// </summary>
+        /// <param name="client">Http client to make the API call</param>
+        /// <param name="url">Link to the API</param>
+        /// <returns>Response from the API as a string</returns>
+        private string fetchStringFromAPI(HttpClient client, string url) {
+            return client.GetStringAsync(url).Result;
         }
 
         /// <summary>
@@ -71,56 +82,95 @@ namespace LoadTiles
         }
 
         /// <summary>
-        /// Calls Google Maps API and imports the relevant data into the application.
-        /// Yes, this should be refactored into multiple procedures once we've figured out how exactly it should do each task.
+        /// Calls the root of Google Maps API to fetch the session token.
         /// </summary>
-        /// <param name="doc">The active Rhino document</param>
         /// <param name="key">Google Maps API Key</param>
-        private void ImportMapsData(RhinoDoc doc, string key) {
+        /// <returns>( Session token, Link to next API to call )</returns>
+        private (string, string) GetGMapsSessionToken(string key) {
             HttpClient client = _gmapsClient;
-
-            // 1st API call, to the root
-            using JsonDocument root = fetchJsonFromAPI(client, $"/v1/3dtiles/root.json?key={key}");
+            // API call, to the root
+            string response = fetchStringFromAPI(client, $"/v1/3dtiles/root.json?key={key}");
+            Tileset tileset = Tileset.Deserialize(response, new Uri("/v1/3dtiles/root.json", UriKind.Relative));
             // We dive down several layers straight away - to the only follow-up API link that appears in the call to the root
             // This link included in the JSON response is special - it contains a session token, which must be included in all further API calls (to non-root nodes)
-            string nextPathWithSession = root.RootElement
-                                             .GetProperty("root")
-                                             .GetProperty("children")[0]
-                                             .GetProperty("children")[0]
-                                             .GetProperty("content")
-                                             .GetProperty("uri")
-                                             .ToString();
-            // The following lines simply manipulate the URL to extract both the left part (without the session) and the session token separately
-            string urlWithSession = client.BaseAddress + nextPathWithSession;
-            Uri uriWithSession = new Uri(urlWithSession);
-            string session = HttpUtility.ParseQueryString(uriWithSession.Query)["session"];
-            string url = uriWithSession.GetLeftPart(UriPartial.Path);
+            string nextPathWithSession = tileset.Root.Children[0].Children[0].Contents[0].Uri.ToString();
+            // The following lines simply manipulate the URL to extract the session token
+            var parts = nextPathWithSession.Split("?");
+            string url = parts[0];
+            var queryParams = HttpUtility.ParseQueryString(parts.Length > 1 ? parts[1] : "");
+            string session = queryParams["session"];
+            return (session, url);
+        }
 
-            /* What follows is just test code to find some sample GLB to import and render
-             * TODO: Given lat and long, navigate the data, making further API calls as needed, to find the right GLB tile(s)
-             */
-            using JsonDocument obj = fetchJsonFromAPI(client, $"{url}?key={key}&session={session}");  // Pattern for each subsequent API call (notice the session token has to be included)
-            // Some segment of the globe
-            url = obj.RootElement
-                     .GetProperty("root")
-                     .GetProperty("children")[0]
-                     .GetProperty("children")[0]
-                     .GetProperty("content")
-                     .GetProperty("uri")
-                     .ToString();
-            byte[] glbBytes = fetchGLBFromAPI(client, $"{url}?key={key}&session={session}");
+        /// <summary>
+        /// Navigates the asset tree to find the tile at a sufficient level of detail at the specified location.
+        /// </summary>
+        /// <param name="point">Location that the tile should match</param>
+        /// <param name="key">Google Maps API key</param>
+        /// <param name="session">Google Maps API session token</param>
+        /// <param name="url">Relative URL of the base API call</param>
+        /// <param name="geometricError">Upper bound of geometric error of target tile</param>
+        /// <returns>Tile at specified location</returns>
+        private Tile FetchTile(Point3d point, string key, string session, string url, double geometricErrorLimit) {
+            HttpClient client = _gmapsClient;
+            string response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
+            Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Relative));
+            Tile tile = tileset.Root;
+            bool done = false;
+            while (!done) {
+                // Recursively traverses down the tree of assets to find children at finer levels of detail
+                tile = tileset.Root;
+                while (!done && tile.Children != null && tile.Children.Count > 0) {
+                    // The bounding boxes of multiple children may overlap.
+                    // We choose the child tile whose centre is closest to the target point.
+                    Tile nextTile = null;
+                    double closest = double.MaxValue;
 
-            // Write the fetched GLB to a temp file
-            // TODO: Other ways of loading data without saving to a file?
-            // TODO: Or, delete file after session ends?
+                    foreach (Tile childTile in tile.Children) {
+                        TileBoundingBox bound = childTile.BoundingVolume.Box;
+                        if (TileBoundingBox.IsInBox(bound, point)) {
+                            double distance = point.DistanceTo(bound.Center);
+                            if (distance < closest) {
+                                nextTile = childTile;
+                                closest = distance;
+                            } 
+                        }
+                    }
+                    // We are done if either of these are true
+                    //   - nextTile == null implying our target point is not in the bounds of any child tile
+                    //   - nextTile.GeometricError < geometricError implying we have found a tile at the sufficient level of detail
+                    if (nextTile == null || nextTile.GeometricError < geometricErrorLimit) done = true;
+                    if (nextTile != null) tile = nextTile;
+                }
+                if (!done) {
+                    // Make a further API call, to fetch tiles at a finer level of detail
+                    url = tile.Contents[0].Uri.ToString();
+                    response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
+                    tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Relative));
+                }
+                
+            }
+            return tile;
+        }
+
+        /// <summary>
+        /// Fetch a GLB file from the API, and imports it into the Rhino window.
+        /// </summary>
+        /// <param name="doc">Active document</param>
+        /// <param name="key">Google Maps API key</param>
+        /// <param name="session">Google Maps API session token</param>
+        /// <param name="url">Relative path of API (this should be a .glb link)</param>
+        private void FetchAndLoadGLB(RhinoDoc doc, string key, string session, string url) {
+            byte[] glbBytes = fetchGLBFromAPI(_gmapsClient, $"{url}?key={key}&session={session}");
+
             string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
             File.WriteAllBytes(tempPath, glbBytes);
 
             // Read GLB from temp file
             bool importSuccess = doc.Import(tempPath);
+            // Zooms out so that the rendered tile fits in view.
+            doc.Views.ActiveView.ActiveViewport.ZoomExtents();
             RhinoApp.WriteLine(importSuccess ? "Import succeeded." : "Import failed.");
-            /* Note: At this point if the object is not showing up, read the README for troubleshooting :)
-             */
         }
 
         /// <summary>
@@ -130,19 +180,43 @@ namespace LoadTiles
         {
             RhinoApp.WriteLine("Fetching...");
 
-            bool getTokenFromInput = true;
-            string tok = "";  // For dev purposes, you may put your own token here and change the above boolean to false
-            if (getTokenFromInput) {
+            /* FOR DEVELOPMENT PURPOSES
+             * In order to save on API calls since Cesium Ion has a usage limit,
+             * it is recommended that you copy the console output of the key, session and url
+             * from the code block below, then save these values for your own subsequent API calls.
+             * If you do so, set `valuesNotInitialised` to false so the initial call to Cesium Ion doesn't
+             * occur again. Be careful not to commit your API key to the repo.
+             */
+            string key = "";
+            string session = "";
+            string url = "";
+            bool valuesNotInitialised = false;
+
+            if (valuesNotInitialised) {
+                string tok = "";
                 using (GetString getStringAction = new GetString()) {  
                     getStringAction.SetCommandPrompt("Type Cesium Ion access token here");
                     getStringAction.GetLiteralString();
                     tok = getStringAction.StringResult();
                     RhinoApp.WriteLine("Key received: {0}", tok);
                 }
+                key = GetGMapsKeyFromCesium(tok);
+                (session, url) = GetGMapsSessionToken(key);
+                Console.WriteLine(key);
+                Console.WriteLine(session);
+                Console.WriteLine(url);
             }
-            
-            string mapsKey = GetGMapsKeyFromCesium(tok);
-            ImportMapsData(doc, mapsKey);
+
+            // Configure location to render
+            // TODO: Have the user input this from the GUI.
+            double lat = 51.500791;
+            double lon = -0.119939;
+            double altitude = 60;  // Chosen arbitrarily
+            double geometricErrorLimit = 100;  // Chosen arbitrarily, but should fetch a tile at a decent zoom level
+
+            Tile tile = FetchTile(Helper.LatLonToEPSG4978(lat, lon, altitude), key, session, url, geometricErrorLimit);
+            url = tile.Contents[0].Uri.ToString();
+            FetchAndLoadGLB(doc, key, session, url);
             return Result.Success;
         }
     }

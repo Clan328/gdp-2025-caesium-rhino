@@ -8,7 +8,10 @@ When prompted, enter your Cesium Ion access token - which you can configure [her
 
 Wait for a message on the Rhino command line that says "Import succeeded".
 
-Now, input "_Zoom", select "All", then select "Extents". You should see some segment of the globe appear in the window.
-
 ## LoadTiles/sampletileset.json
 This is a sample JSON response from Google Maps 3D tiles - to test (and save on API calls!)
+
+## LoadTiles/LoadTilesCommand.cs
+This is where most of the work on the plugin side of the project currently lies.
+TODO (Critical):
+- Load more than one GLB tile at a time
