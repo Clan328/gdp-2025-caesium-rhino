@@ -15,6 +15,6 @@ This is a sample JSON response from Google Maps 3D tiles - to test (and save on 
 This is where most of the work on the plugin side of the project currently lies.
 
 TODO:
-- Selectively load the descendants of a tile
+- Selectively load the descendants of a tile. You can find an implementation of a traversal program [here](https://github.com/CesiumGS/cesium/blob/5eaa2280f495d8f300d9e1f0497118c97aec54c8/packages/engine/Source/Scene/Cesium3DTilesetBaseTraversal.js).
 - Translate the loaded tiles to the origin in the application's coordinate system
 - Incorporate the GUI's functionality to have the user input the latitude and longitude
