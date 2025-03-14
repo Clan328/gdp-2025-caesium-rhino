@@ -228,7 +228,6 @@ namespace LoadTiles
             }
 
             // Configure location to render
-            // TODO: Have the user input this from the GUI.
             double lat = result.latitude;
             double lon = result.longitude;
             double altitude = 60;  // Chosen arbitrarily
