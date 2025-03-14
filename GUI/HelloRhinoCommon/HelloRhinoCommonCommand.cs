@@ -172,7 +172,7 @@ namespace HelloRhinoCommon
             };
         }
 
-        public DialogResult getUserInput() {
+        private DialogResult getUserInput() {
             string apiKey = this.apiKeyTextBox.Text;
             string modelName = this.modelDropDown.SelectedValue.ToString();
             string latitudeText = this.latitudeTextBox.Text;
