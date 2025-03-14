@@ -4,7 +4,9 @@ It should open an instance of Rhino with the plugin loaded.
 
 In Rhino's command line (which should be positioned near the top of the window), type "Fetch". If the plugin was loaded correctly it should start autocompleting this function name as you type it.
 
-When prompted, enter your Cesium Ion access token - which you can configure [here](https://ion.cesium.com/tokens).
+If the GUI doesn't open when running "Fetch", try running "MyCommand" and then cancelling before running "Fetch" again.
+
+When prompted, enter your Cesium Ion access token - which you can configure [here](https://ion.cesium.com/tokens), and also enter the longitude and latitude of where you want to load. Currently the option entered for model do not affect the source for the tiles.
 
 For convenience, you should create a `.env` file in this root directory storing your API query parameters for Google Maps' API. More details in the comment in the `RunCommand` method in `LoadTiles/LoadTilesCommand.cs`.
 
@@ -17,4 +19,3 @@ This is where most of the work on the plugin side of the project currently lies.
 TODO:
 - Selectively load the descendants of a tile. You can find an implementation of a traversal program [here](https://github.com/CesiumGS/cesium/blob/5eaa2280f495d8f300d9e1f0497118c97aec54c8/packages/engine/Source/Scene/Cesium3DTilesetBaseTraversal.js).
 - Translate the loaded tiles to the origin in the application's coordinate system
-- Incorporate the GUI's functionality to have the user input the latitude and longitude
