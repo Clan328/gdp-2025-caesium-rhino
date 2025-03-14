@@ -1,5 +1,9 @@
-﻿using System.Text.Json;
+﻿using System.Buffers.Text;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using System.Text.Unicode;
 using Rhino.Geometry;
 
 namespace TilesData;
@@ -15,10 +19,7 @@ static class Helpers
     /// <exception cref="ArgumentException">Raised if the condition fails</exception>
     public static void Require(bool Cond, string Message, string Argument)
     {
-        if (!Cond)
-        {
-            throw new ArgumentException(Message, Argument);
-        }
+        if (!Cond) throw new ArgumentException(Message, Argument);
     }
 
     /// <summary>
@@ -68,6 +69,62 @@ static class Helpers
         }
         return inverse;
     }
+}
+
+/// <summary>
+/// A decoded `data:` URI. Exactly one of `String` and `Bytes` will be set
+/// </summary>
+/// <param name="Uri"></param>
+/// <param name="MediaType"></param>
+/// <param name="String">The decoded value, if it is a string</param>
+/// <param name="Bytes">The decoded value, if it is non-string data</param>
+public partial record class DataUri(
+    Uri Uri,
+    string? MediaType,
+    string? String,
+    byte[]? Bytes
+)
+{
+    public static DataUri? Create(Uri uri)
+    {
+        if (uri.Scheme != "data") return null;
+
+        Match match = DataUriRegex().Match(uri.PathAndQuery)
+            ?? throw new ArgumentException("Malformed data URI");
+
+        var mediaType = match.Groups["MediaType"]?.ToString();
+        var isBase64 = match.Groups["base64"].ToString() != "";
+        var body = match.Groups["body"]?.ToString()
+            ?? throw new ArgumentException("Malformed data URI");
+
+        if (isBase64)
+        {
+            var bytes = Convert.FromBase64String(body);
+            return new DataUri(
+                uri,
+                mediaType,
+                String: null,
+                Bytes: bytes
+            );
+        }
+        else
+        {
+            return new DataUri(
+                uri,
+                mediaType,
+                String: Uri.UnescapeDataString(body),
+                Bytes: null
+            );
+        }
+    }
+
+    public static DataUri? Create(string uri)
+    {
+        return Create(new Uri(uri));
+    }
+
+    [GeneratedRegex(@"^(?<MediaType>[^;,]+(;[^;,]*=[^;,]*)*)?(?<base64>;base64)?,(?<body>.*)$")]
+    private static partial Regex DataUriRegex();
 }
 
 /// <summary>
