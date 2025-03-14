@@ -40,7 +40,7 @@ namespace HelloRhinoCommon
         }
     }
 
-    internal class DialogResult {
+    public class DialogResult {
         public string apiKey;
         public string modelName;
         public float latitude;
@@ -53,7 +53,7 @@ namespace HelloRhinoCommon
         }
     }
 
-    internal class MyDialog : Dialog<DialogResult> {
+    public class MyDialog : Dialog<DialogResult> {
         private TextBox apiKeyTextBox;
         private DropDown modelDropDown;
         private TextBox latitudeTextBox;
@@ -172,7 +172,7 @@ namespace HelloRhinoCommon
             };
         }
 
-        private DialogResult getUserInput() {
+        public DialogResult getUserInput() {
             string apiKey = this.apiKeyTextBox.Text;
             string modelName = this.modelDropDown.SelectedValue.ToString();
             string latitudeText = this.latitudeTextBox.Text;
