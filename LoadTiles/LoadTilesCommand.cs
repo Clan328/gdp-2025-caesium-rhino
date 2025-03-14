@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using TilesData;
 using Rhino.Geometry;
+using HelloRhinoCommon;
 
 namespace LoadTiles
 {
@@ -208,25 +209,27 @@ namespace LoadTiles
              */
             bool valuesNotInitialised = key == null || session == null || url == null;
 
+            MyDialog dialog = new();
+            HelloRhinoCommon.DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow); 
+
+            if (result == null) {
+                RhinoApp.WriteLine("User canceled input.");
+                return Result.Cancel;
+            }
+
             if (valuesNotInitialised) {
-                string tok = "";
-                using (GetString getStringAction = new GetString()) {  
-                    getStringAction.SetCommandPrompt("Type Cesium Ion access token here");
-                    getStringAction.GetLiteralString();
-                    tok = getStringAction.StringResult();
-                    RhinoApp.WriteLine("Key received: {0}", tok);
-                }
+                string tok = result.apiKey;
                 key = GetGMapsKeyFromCesium(tok);
                 (session, url) = GetGMapsSessionToken(key);
+                
                 Console.WriteLine(key);
                 Console.WriteLine(session);
                 Console.WriteLine(url);
             }
 
             // Configure location to render
-            // TODO: Have the user input this from the GUI.
-            double lat = 51.500791;
-            double lon = -0.119939;
+            double lat = result.latitude;
+            double lon = result.longitude;
             double altitude = 60;  // Chosen arbitrarily
             double geometricErrorLimit = 100;  // Chosen arbitrarily, but should fetch a tile at a decent zoom level
 
