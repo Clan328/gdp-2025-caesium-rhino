@@ -1,14 +1,12 @@
-﻿using System.Buffers.Text;
-using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Text.Unicode;
 using Rhino.Geometry;
+using TilesData.Json;
 
 namespace TilesData;
 
-static class Helpers
+public static class Helpers
 {
     /// <summary>
     /// Assert some condition. If the condition is false, then raise an ArgumentException
@@ -68,6 +66,21 @@ static class Helpers
             throw new ArgumentException("Attempt to invert non-invertible Transform", nameof(transform));
         }
         return inverse;
+    }
+
+    /// <summary>
+    /// Calculate screen space error.
+    /// </summary>
+    /// <param name="geometricError">The geometric error of the tile/tileset.</param>
+    /// <param name="screenHeight">The height of the screen in pixel.</param>
+    /// <param name="tileDistance">The distance from the camera to the tile. Must be non-zero.</param>
+    /// <param name="fovy">The field of view in the y-direction in radians. Must be non-zero.</param>
+    /// <returns></returns>
+    public static double ScreenSpaceError(
+        double geometricError, double screenHeight, double tileDistance, double fovy
+    )
+    {
+        return geometricError * screenHeight / (tileDistance * 2 * Math.Tan(fovy / 2));
     }
 }
 
@@ -150,7 +163,8 @@ public record class TileBoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vect
         return new TileBoundingBox(Center, X, Y, Z);
     }
 
-    public static bool IsInBox(TileBoundingBox box, Point3d point) {
+    public static bool IsInBox(TileBoundingBox box, Point3d point)
+    {
         return box.AsBox().Contains(point);
     }
 
@@ -254,16 +268,23 @@ public enum Refine
 public record class Content(
     BoundingVolume BoundingVolume,
     Uri Uri,
-    uint Group = 0
+    MetadataEntity? Group
 )
 {
-    // TODO: resolve uri
-    public Content(Json.Content content) : this(
-        new BoundingVolume(content.BoundingVolume),
-        content.Uri,
-        content.Group ?? 0
-    )
-    { }
+    public static Content FromJson(Json.Content content, TileParseContext ctx)
+    {
+        var uri = new Uri(ctx.BaseUri, content.Uri);
+        var groupId = content.Group ?? 0;
+        var group = groupId < ctx.Groups.Count
+            ? ctx.Groups[(int)groupId]
+            : null;
+
+        return new Content(
+            new BoundingVolume(content.BoundingVolume),
+            uri,
+            group
+        );
+    }
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -276,7 +297,8 @@ public enum SubdivisionScheme
 public record class TileParseContext(
     Refine Refine,
     Transform Transform,
-    Uri BaseUri
+    Uri BaseUri,
+    List<MetadataEntity> Groups
 );
 
 // TODO: implement implicit tiling
@@ -310,21 +332,21 @@ public record class Tile(
         var GlobalTransform = ctx.Transform * LocalTransform;
         var Refine = tile.Refine ?? ctx.Refine;
 
+        var ctx1 = new TileParseContext(Refine, GlobalTransform, ctx.BaseUri, ctx.Groups);
+
         List<Content> Contents;
         if (tile.Contents is not null)
         {
-            Contents = tile.Contents.ConvertAll(content => new Content(content));
+            Contents = tile.Contents.ConvertAll(content => Content.FromJson(content, ctx));
         }
         else if (tile.Content is not null)
         {
-            Contents = Helpers.Singleton(new Content(tile.Content));
+            Contents = Helpers.Singleton(Content.FromJson(tile.Content, ctx));
         }
         else
         {
             Contents = new List<Content>();
         }
-
-        var ctx1 = new TileParseContext(Refine, GlobalTransform, ctx.BaseUri);
 
         var Children = tile.Children is null
             ? new List<Tile>()
@@ -345,16 +367,22 @@ public record class Tile(
 
 public record class Tileset(
     double GeometricError,
-    Tile Root
+    Tile Root,
+    List<MetadataEntity> Groups
 )
 {
     public static Tileset FromJson(Json.Tileset tileset, Uri uri)
     {
         var refine = tileset.Root.Refine ?? Refine.ADD;
-        var ctx = new TileParseContext(refine, Transform.Identity, uri);
+        var groups = tileset.Groups ?? new List<MetadataEntity>();
+        var ctx = new TileParseContext(refine, Transform.Identity, uri, groups);
         var root = Tile.FromJson(tileset.Root, ctx);
 
-        return new Tileset(tileset.GeometricError, root);
+        return new Tileset(
+            tileset.GeometricError,
+            root,
+            groups
+        );
     }
 
     public static Tileset Deserialize(ReadOnlySpan<byte> data, Uri uri)
