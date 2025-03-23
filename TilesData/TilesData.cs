@@ -366,6 +366,7 @@ public record class Tile(
 }
 
 public record class Tileset(
+    Asset Asset,
     double GeometricError,
     Tile Root,
     List<MetadataEntity> Groups
@@ -379,6 +380,7 @@ public record class Tileset(
         var root = Tile.FromJson(tileset.Root, ctx);
 
         return new Tileset(
+            tileset.Asset,
             tileset.GeometricError,
             root,
             groups
