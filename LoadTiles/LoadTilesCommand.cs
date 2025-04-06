@@ -119,7 +119,7 @@ namespace LoadTiles
         private Tile FetchTile(Point3d point, double geometricErrorLimit) {
             HttpClient client = _gmapsClient;
             string response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
-            Tileset tileset = Tileset.Deserialize(response, new Uri(client.BaseAddress+url, UriKind.Absolute));
+            Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute));
             Tile tile = tileset.Root;
             bool done = false;
             while (!done) {
@@ -151,7 +151,7 @@ namespace LoadTiles
                     // Make a further API call, to fetch tiles at a finer level of detail
                     url = tile.Contents[0].Uri.ToString();
                     response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
-                    tileset = Tileset.Deserialize(response, new Uri(client.BaseAddress+url, UriKind.Absolute));
+                    tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute));
                 }
                 
             }
