@@ -151,14 +151,14 @@ public partial record class DataUri(
 /// <param name="Z">The z-axis of the box</param>
 public record class TileBoundingBox(Point3d Center, Vector3d X, Vector3d Y, Vector3d Z)
 {
-    public static TileBoundingBox FromArray(List<double> values)
+    public static TileBoundingBox FromArray(List<double> values, Transform transform)
     {
         Helpers.Require(values.Count == 12, "Expected list of length 12", nameof(values));
 
-        var Center = new Point3d(values[0], values[1], values[2]);
-        var X = new Vector3d(values[3], values[4], values[5]);
-        var Y = new Vector3d(values[6], values[7], values[8]);
-        var Z = new Vector3d(values[9], values[10], values[11]);
+        var Center = transform * new Point3d(values[0], values[1], values[2]);
+        var X = transform * new Vector3d(values[3], values[4], values[5]);
+        var Y = transform * new Vector3d(values[6], values[7], values[8]);
+        var Z = transform * new Vector3d(values[9], values[10], values[11]);
 
         return new TileBoundingBox(Center, X, Y, Z);
     }
@@ -195,11 +195,11 @@ public record class BoundingRegion(double West, double South, double East, doubl
 
 public record class BoundingSphere(Point3d Center, double Radius)
 {
-    public static BoundingSphere FromArray(List<double> values)
+    public static BoundingSphere FromArray(List<double> values, Transform transform)
     {
         Helpers.Require(values.Count == 4, "Expected list of length 4", nameof(values));
 
-        var Center = new Point3d(values[0], values[1], values[2]);
+        var Center = transform * new Point3d(values[0], values[1], values[2]);
         var Radius = values[3];
 
         return new BoundingSphere(Center, Radius);
@@ -219,10 +219,10 @@ public record class BoundingSphere(Point3d Center, double Radius)
 /// </summary>
 public record class BoundingVolume(TileBoundingBox? Box, BoundingRegion? Region, BoundingSphere? Sphere)
 {
-    public BoundingVolume(Json.BoundingVolume? volume) : this(
-        volume?.Box is null ? null : TileBoundingBox.FromArray(volume.Box),
+    public BoundingVolume(Json.BoundingVolume? volume, Transform transform) : this(
+        volume?.Box is null ? null : TileBoundingBox.FromArray(volume.Box, transform),
         volume?.Region is null ? null : BoundingRegion.FromArray(volume.Region),
-        volume?.Sphere is null ? null : BoundingSphere.FromArray(volume.Sphere)
+        volume?.Sphere is null ? null : BoundingSphere.FromArray(volume.Sphere, transform)
     )
     { }
 
@@ -265,10 +265,15 @@ public enum Refine
 /// <param name="BoundingVolume">This is never null. Check if this is missing using the BoundingVolume.IsSet method.</param>
 /// <param name="Uri"></param>
 /// <param name="Group"></param>
+/// <param name="Transform">The transform to the coordinate space given by the
+/// user (see Tileset.Deserialize) from the coordinate space of this content.
+/// GLTF and 3d Tiles use different coordinate systems, so this should
+/// be transformed before applying to the GLTF tile.</param>
 public record class Content(
     BoundingVolume BoundingVolume,
     Uri Uri,
-    MetadataEntity? Group
+    MetadataEntity? Group,
+    Transform Transform
 )
 {
     public static Content FromJson(Json.Content content, TileParseContext ctx)
@@ -280,9 +285,10 @@ public record class Content(
             : null;
 
         return new Content(
-            new BoundingVolume(content.BoundingVolume),
+            new BoundingVolume(content.BoundingVolume, ctx.Transform),
             uri,
-            group
+            group,
+            ctx.Transform
         );
     }
 }
@@ -353,8 +359,8 @@ public record class Tile(
             : tile.Children.ConvertAll(child => FromJson(child, ctx1));
 
         return new Tile(
-            new BoundingVolume(tile.BoundingVolume),
-            new BoundingVolume(tile.ViewerRequestVolume),
+            new BoundingVolume(tile.BoundingVolume, GlobalTransform),
+            new BoundingVolume(tile.ViewerRequestVolume, GlobalTransform),
             tile.GeometricError,
             tile.Refine ?? ctx.Refine,
             LocalTransform,
@@ -365,6 +371,13 @@ public record class Tile(
     }
 }
 
+/// <summary>
+/// A Tileset, containing a `Tile`s which may reference external `Tileset`s.
+/// </summary>
+/// <param name="Asset"></param>
+/// <param name="GeometricError"></param>
+/// <param name="Root"></param>
+/// <param name="Groups"></param>
 public record class Tileset(
     Asset Asset,
     double GeometricError,
@@ -372,11 +385,11 @@ public record class Tileset(
     List<MetadataEntity> Groups
 )
 {
-    public static Tileset FromJson(Json.Tileset tileset, Uri uri)
+    static Tileset FromJson(Json.Tileset tileset, Uri uri, Transform transform)
     {
         var refine = tileset.Root.Refine ?? Refine.ADD;
         var groups = tileset.Groups ?? new List<MetadataEntity>();
-        var ctx = new TileParseContext(refine, Transform.Identity, uri, groups);
+        var ctx = new TileParseContext(refine, transform, uri, groups);
         var root = Tile.FromJson(tileset.Root, ctx);
 
         return new Tileset(
@@ -387,18 +400,38 @@ public record class Tileset(
         );
     }
 
-    public static Tileset Deserialize(ReadOnlySpan<byte> data, Uri uri)
+    /// <summary>
+    /// Deserialise a Tileset.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="uri"></param>
+    /// <param name="transform">The affine transformation applied to all bounding boxes in this
+    /// Tileset. This can be used to convert from 3d Tiles coordinate space (right-handed Z-up) to
+    /// Rhino3d's.</param>
+    /// <returns></returns>
+    /// <exception cref="JsonException"></exception>
+    public static Tileset Deserialize(ReadOnlySpan<byte> data, Uri uri, Transform transform)
     {
         var raw = Json.Tileset.FromJson(data)
             ?? throw new JsonException("JSON deserialisation returned null");
-        return FromJson(raw, uri);
+        return FromJson(raw, uri, transform);
     }
 
-    public static Tileset Deserialize(string data, Uri uri)
+    /// <summary>
+    /// Deserialise a Tileset.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="uri"></param>
+    /// <param name="transform">The affine transformation applied to all bounding boxes in this
+    /// Tileset. This can be used to convert from 3d Tiles coordinate space (right-handed Z-up) to
+    /// Rhino3d's.</param>
+    /// <returns></returns>
+    /// <exception cref="JsonException"></exception>
+    public static Tileset Deserialize(string data, Uri uri, Transform transform)
     {
         var raw = Json.Tileset.FromJson(data)
             ?? throw new JsonException("JSON deserialisation returned null");
-        return FromJson(raw, uri);
+        return FromJson(raw, uri, transform);
     }
 }
 
