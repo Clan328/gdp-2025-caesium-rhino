@@ -151,7 +151,7 @@ namespace LoadTiles
                     // Make a further API call, to fetch tiles at a finer level of detail
                     url = tile.Contents[0].Uri.ToString();
                     response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
-                    tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Relative));
+                    tileset = Tileset.Deserialize(response, new Uri(client.BaseAddress+url, UriKind.Absolute));
                 }
                 
             }
