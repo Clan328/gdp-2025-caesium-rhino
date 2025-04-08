@@ -98,7 +98,7 @@ namespace LoadTiles
             HttpClient client = _gmapsClient;
             // API call, to the root
             string response = fetchStringFromAPI(client, $"/v1/3dtiles/root.json?key={key}");
-            Tileset tileset = Tileset.Deserialize(response, new Uri(client.BaseAddress+"/v1/3dtiles/root.json", UriKind.Absolute));
+            Tileset tileset = Tileset.Deserialize(response, new Uri(client.BaseAddress+"/v1/3dtiles/root.json", UriKind.Absolute), Transform.Identity); // TODO: Change transform
             // We dive down several layers straight away - to the only follow-up API link that appears in the call to the root
             // This link included in the JSON response is special - it contains a session token, which must be included in all further API calls (to non-root nodes)
             string nextPathWithSession = tileset.Root.Children[0].Children[0].Contents[0].Uri.ToString();
@@ -119,7 +119,7 @@ namespace LoadTiles
         private Tile FetchTile(Point3d point, double geometricErrorLimit) {
             HttpClient client = _gmapsClient;
             string response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
-            Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute));
+            Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute), Transform.Identity); // TODO: Change transform
             Tile tile = tileset.Root;
             bool done = false;
             while (!done) {
@@ -151,7 +151,7 @@ namespace LoadTiles
                     // Make a further API call, to fetch tiles at a finer level of detail
                     url = tile.Contents[0].Uri.ToString();
                     response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
-                    tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute));
+                    tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute), Transform.Identity); // TODO: Change transform
                 }
                 
             }

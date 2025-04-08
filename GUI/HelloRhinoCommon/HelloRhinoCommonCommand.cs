@@ -67,13 +67,13 @@ namespace HelloRhinoCommon
             var titleLabel = new Label {
                 Text = "GDP Plugin",
                 VerticalAlignment = VerticalAlignment.Center,
-                Font = new Font(SystemFont.Default.ToString(), 18, FontStyle.Bold)
+                Font = new Font("Helvetica", 18, FontStyle.Bold)
             };
 
             var subtitleLabel = new Label {
                 Text = "Enter all of the data in this window",
                 VerticalAlignment = VerticalAlignment.Center,
-                Font = new Font(SystemFont.Default.ToString(), 10)
+                Font = new Font("Helvetica", 10)
             };
 
             var subtitleLabelPanel = new Panel {
@@ -84,14 +84,14 @@ namespace HelloRhinoCommon
             var apiKeyLabel = new Label {
                 Text = "API key:",
                 VerticalAlignment = VerticalAlignment.Center,
-                Font = new Font(SystemFont.Default.ToString(), 10)
+                Font = new Font("Helvetica", 10)
             };
             this.apiKeyTextBox = new TextBox{Width = 200};
 
             var modelLabel = new Label {
                 Text = "Model:",
                 VerticalAlignment = VerticalAlignment.Center,
-                Font = new Font(SystemFont.Default.ToString(), 10)
+                Font = new Font("Helvetica", 10)
             };
 
             this.modelDropDown = new DropDown {
@@ -102,13 +102,13 @@ namespace HelloRhinoCommon
             var latitudeLabel = new Label {
                 Text = "Latitude:",
                 VerticalAlignment = VerticalAlignment.Center,
-                Font = new Font(SystemFont.Default.ToString(), 10)
+                Font = new Font("Helvetica", 10)
             };
             this.latitudeTextBox = new TextBox();
             var longitudeLabel = new Label {
                 Text = "Longitude:",
                 VerticalAlignment = VerticalAlignment.Center,
-                Font = new Font(SystemFont.Default.ToString(), 10)
+                Font = new Font("Helvetica", 10)
             };
             this.longitudeTextBox = new TextBox();
 
