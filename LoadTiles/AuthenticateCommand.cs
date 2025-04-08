@@ -85,7 +85,7 @@ namespace CesiumAuth
 
             Process.Start(new ProcessStartInfo
             {
-                FileName = $"https://ion.cesium.com/oauth?response_type=code&client_id={CLIENT_ID}&redirect_uri=http://localhost:{port}&scope=assets:read assets:list&state={state}",
+                FileName = $"https://ion.cesium.com/oauth?response_type=code&client_id={CLIENT_ID}&redirect_uri=http://127.0.0.1:{port}&scope=assets:read assets:list&state={state}",
                 UseShellExecute = true
             });
 
