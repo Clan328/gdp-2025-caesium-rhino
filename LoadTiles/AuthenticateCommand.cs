@@ -2,8 +2,9 @@ using Rhino;
 using Rhino.Commands;
 using System;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Net;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Web;
 using System.Threading.Tasks;
 using System.Collections.Specialized;
@@ -17,6 +18,7 @@ namespace CesiumAuth
         private const string CLIENT_ID = "1108"; // ID of OAuth application; TODO: Move this to config file
         
         private static readonly HttpClient client = new HttpClient();
+        private static readonly IPEndPoint DefaultLoopbackEndpoint = new IPEndPoint(IPAddress.Loopback, port: 0);
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
         public override string EnglishName => "Authenticate";
@@ -67,8 +69,17 @@ namespace CesiumAuth
             return code;
         }
 
+        public static int GetAvailablePort()
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.Bind(DefaultLoopbackEndpoint);
+                return ((IPEndPoint)socket.LocalEndPoint).Port;
+            }
+        }
+
         private string? Authenticate() {
-            int port = 8080; // TODO: Find open port
+            int port = GetAvailablePort();
 
             string state = GenerateState();
 
