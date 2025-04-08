@@ -21,13 +21,12 @@ namespace CesiumAuth
         ///<returns>The command name as it appears on the Rhino command line.</returns>
         public override string EnglishName => "Authenticate";
 
-        private string? ListenCode(string prefix)
+        private string? ListenCode(string prefix, string requiredState)
         {
             // TODO: Error handling for the following cases:
             //       - If user closes auth website, rhino will freeze forever
             //       - Bad requests to server should throw error
             //       - code being null should throw an error
-            //       Implement more security
             //       Improve successful auth website
             if (!HttpListener.IsSupported)
             {
@@ -47,6 +46,12 @@ namespace CesiumAuth
             NameValueCollection query = HttpUtility.ParseQueryString(request.Url.Query);
 
             string code = query.Get("code");
+            string? state = query.Get("state");
+
+            if (state == null || state != requiredState) {
+                // This means we are being attacked
+                return null;
+            }
 
             HttpListenerResponse response = context.Response;
             string responseString = "<HTML><BODY> Authentication successful, you can return to Rhino!</BODY></HTML>";
@@ -65,13 +70,15 @@ namespace CesiumAuth
         private string? Authenticate() {
             int port = 8080; // TODO: Find open port
 
+            string state = GenerateState();
+
             Process.Start(new ProcessStartInfo
             {
-                FileName = $"https://ion.cesium.com/oauth?response_type=code&client_id={CLIENT_ID}&redirect_uri=http://localhost:{port}&scope=assets:read assets:list",
+                FileName = $"https://ion.cesium.com/oauth?response_type=code&client_id={CLIENT_ID}&redirect_uri=http://localhost:{port}&scope=assets:read assets:list&state={state}",
                 UseShellExecute = true
             });
 
-            string code = ListenCode($"http://*:{port}/");
+            string code = ListenCode($"http://*:{port}/", state);
 
             if (code == null) {
                 // TODO: Throw error
@@ -99,6 +106,18 @@ namespace CesiumAuth
             var responseValues = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString);
             
             return responseValues["access_token"];
+        }
+
+        private string GenerateState() {
+            const string characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+            var random = new Random();
+            var chars = new char[20];
+
+            for (int i = 0; i < 20; i++)
+                chars[i] = characters[random.Next(characters.Length)];
+
+            return new string(chars);
         }
 
         /// <summary>
