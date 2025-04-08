@@ -2,6 +2,7 @@ using Rhino;
 using Rhino.Commands;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -29,7 +30,6 @@ namespace CesiumAuth
             //       - If user closes auth website, rhino will freeze forever
             //       - Bad requests to server should throw error
             //       - code being null should throw an error
-            //       Improve successful auth website
             if (!HttpListener.IsSupported)
             {
                 Console.WriteLine ("HttpListener class is not supported by OS.");
@@ -56,7 +56,7 @@ namespace CesiumAuth
             }
 
             HttpListenerResponse response = context.Response;
-            string responseString = "<HTML><BODY> Authentication successful, you can return to Rhino!</BODY></HTML>";
+            string responseString = File.ReadAllText("index.html");
             byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
 
             response.ContentLength64 = buffer.Length;
@@ -89,7 +89,7 @@ namespace CesiumAuth
                 UseShellExecute = true
             });
 
-            string code = ListenCode($"http://*:{port}/", state);
+            string code = ListenCode($"http://127.0.0.1:{port}/", state);
 
             if (code == null) {
                 // TODO: Throw error
