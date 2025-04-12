@@ -3,6 +3,7 @@ using Rhino.Commands;
 using Eto.Drawing;
 using Eto.Forms;
 using Rhino.UI;
+using CesiumAuth;
 
 namespace HelloRhinoCommon
 {
@@ -58,6 +59,7 @@ namespace HelloRhinoCommon
         private DropDown modelDropDown;
         private TextBox latitudeTextBox;
         private TextBox longitudeTextBox;
+        private Button authButton;
 
         public MyDialog() {
             Title = "GDP Plugin Window";
@@ -112,7 +114,43 @@ namespace HelloRhinoCommon
             };
             this.longitudeTextBox = new TextBox();
 
+        // All Auth stuff :
+            // Display for 'Logged In' / 'Logged Out' status
+            var loggedInLabel = new Label {
+                Text = (AuthSession.IsLoggedIn ? "Logged in with key: " + AuthSession.CesiumAccessToken : "You are not logged in."),
+                VerticalAlignment = VerticalAlignment.Center,
+                Font = new Font("Helvetica", 10)
+            };
+
             // Button authButton = new Button{Text = "Click here to do auth"};
+            this.authButton = new Button{Text = (AuthSession.IsLoggedIn ? "Log Out" : "Log In")};
+            this.authButton.Click += (sender, e) => {
+                if (AuthSession.IsLoggedIn)
+                {
+                    // Log out the user
+                    AuthSession.CesiumAccessToken = null;
+                    MessageBox.Show("Logging out...");
+                    authButton.Text = "Log In";
+                    loggedInLabel.Text = "You are not logged in.";
+                    return;
+                }
+
+                var authCommand = new AuthenticateCommand();
+                string? key = authCommand.AuthenticatePublic();
+
+                if (key != null)
+                {
+                    AuthSession.CesiumAccessToken = key;
+                    MessageBox.Show("Authentication successful!");
+                    authButton.Text = "Log Out";
+                    loggedInLabel.Text = "Logged in with key: " + key;
+                }
+                else
+                {
+                    MessageBox.Show("Authentication failed. Please try again.");
+                }
+            };
+
 
             DefaultButton = new Button{Text = "Submit"};
             DefaultButton.Click += (sender, e) => {
@@ -130,6 +168,12 @@ namespace HelloRhinoCommon
                 Rows = {
                     new TableRow(new TableCell(apiKeyLabel, false), new TableCell(apiKeyTextBox, true))
                 }
+            };
+            
+            StackLayout authStackLayout = new StackLayout {
+                Orientation = Orientation.Vertical,
+                Spacing = 5,
+                Items = { null, loggedInLabel, this.authButton }
             };
 
             StackLayout modelStackLayout = new StackLayout {
@@ -162,7 +206,7 @@ namespace HelloRhinoCommon
                 Items = {
                     titleLabel,
                     subtitleLabelPanel,
-                    apiKeyTableLayout,
+                    authStackLayout,
                     modelStackLayout,
                     latitudeStackLayout,
                     longitudeStackLayout,
@@ -173,7 +217,7 @@ namespace HelloRhinoCommon
         }
 
         private DialogResult getUserInput() {
-            string apiKey = this.apiKeyTextBox.Text;
+            string apiKey = AuthSession.CesiumAccessToken;
             string modelName = this.modelDropDown.SelectedValue.ToString();
             string latitudeText = this.latitudeTextBox.Text;
             string longitudeText = this.longitudeTextBox.Text;
@@ -182,14 +226,10 @@ namespace HelloRhinoCommon
             bool latitudeValid = canConvertLatitude && latitude >= -90 && latitude <= 90;
             bool longitudeValid = canConvertLongitude && longitude >= -180 && longitude <= 180;
             if (string.IsNullOrWhiteSpace(apiKey)) {
-                MessageBox.Show("You have entered an invalid API key.", "Error", MessageBoxType.Error);
-                this.apiKeyTextBox.BackgroundColor = Colors.DarkRed;
-                this.apiKeyTextBox.TextColor = Colors.White;
+                MessageBox.Show("You are not logged in!", "Error", MessageBoxType.Error);
                 return null;
-            } else {
-                this.apiKeyTextBox.BackgroundColor = Colors.White;
-                this.apiKeyTextBox.TextColor = Colors.Black;
-            }
+            } 
+
             if (!latitudeValid || !longitudeValid) {
                 MessageBox.Show("You have entered invalid coordinate values.", "Error", MessageBoxType.Error);
                 if (!latitudeValid) {
@@ -213,6 +253,13 @@ namespace HelloRhinoCommon
                 this.latitudeTextBox.TextColor = Colors.Black;
                 this.longitudeTextBox.TextColor = Colors.Black;
             }
+
+            RhinoApp.WriteLine("Fetch Successful! \n" +
+                "Model Name: " + modelName + "\n" +
+                "Latitude: " + latitude.ToString() + "\n" +
+                "Longitude: " + longitude.ToString()
+            );
+
             return new DialogResult(
                 apiKey,
                 modelName,
