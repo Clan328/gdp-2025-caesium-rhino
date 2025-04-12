@@ -14,6 +14,39 @@ using System.Text.Json;
 
 namespace CesiumAuth
 {
+    public static class AuthSession
+    {
+        // tracks the access token for the session, given by the most recent log-in.
+        public static string? CesiumAccessToken { get; set; }
+
+        // tracks logged-in status
+        public static bool IsLoggedIn => !string.IsNullOrEmpty(CesiumAccessToken);
+
+    }    
+
+    // Manually logs the user out of the Cesium account via the command line.
+    public class LogOutCommand : Command
+    {
+        ///<returns>The command name as it appears on the Rhino command line.</returns>
+        public override string EnglishName => "LogOut";
+
+        /// <summary>
+        /// Handles the user running the command.
+        /// </summary>
+        protected override Result RunCommand(RhinoDoc doc, RunMode mode)
+        {
+            RhinoApp.WriteLine("Logging out...");
+
+            AuthSession.CesiumAccessToken = null;
+
+            RhinoApp.WriteLine("Logged out successfully!");
+
+            return Result.Success;
+        }
+    }
+
+
+
     public class AuthenticateCommand : Command
     {
         private const string CLIENT_ID = "1108"; // ID of OAuth application; TODO: Move this to config file
@@ -115,8 +148,13 @@ namespace CesiumAuth
             string responseString = Task.Run(() => response.Content.ReadAsStringAsync()).GetAwaiter().GetResult();
 
             var responseValues = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString);
-            
+
             return responseValues["access_token"];
+        }
+
+        public string? AuthenticatePublic()
+        {
+            return Authenticate();
         }
 
         private string GenerateState() {
@@ -142,9 +180,17 @@ namespace CesiumAuth
 
             if (key == null) return Result.Failure;
 
-            RhinoApp.WriteLine(key);
+            RhinoApp.WriteLine("Authentication successful!");
+            AuthSession.CesiumAccessToken = key;
 
             return Result.Success;
         }
+
     }
+
+
+
 }
+
+// TODO (SKYE) : Implement a way to mark status as 'logged in' or 'logged out', storing access key for session. [x]
+// TODO (SKYE) : Embed this process into the GUI [x]
