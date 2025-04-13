@@ -1,6 +1,5 @@
 ﻿using Rhino;
 using Rhino.Commands;
-using Rhino.Input.Custom;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -111,10 +110,10 @@ namespace LoadTiles
         }
 
         /// <summary>
-        /// Navigates the asset tree to find the tile at a sufficient level of detail at the specified location.
+        /// Navigates the asset tree to find the parent tile which contains, as descendants, all the tiles around the specified location we might want to load.
         /// </summary>
-        /// <param name="point">Location that the tile should match</param>
-        /// <param name="geometricError">Upper bound of geometric error of target tile</param>
+        /// <param name="point">Location that the tile should contain</param>
+        /// <param name="geometricError">Upper bound of geometric error of parent tile</param>
         /// <returns>Tile at specified location</returns>
         private Tile FetchTile(Point3d point, double geometricErrorLimit) {
             HttpClient client = _gmapsClient;
@@ -128,7 +127,7 @@ namespace LoadTiles
                 while (!done && tile.Children != null && tile.Children.Count > 0) {
                     // The bounding boxes of multiple children may overlap.
                     // We choose the child tile whose centre is closest to the target point.
-                    Tile nextTile = null;
+                    Tile? nextTile = null;
                     double closest = double.MaxValue;
 
                     foreach (Tile childTile in tile.Children) {
@@ -164,13 +163,18 @@ namespace LoadTiles
         /// <param name="doc">Active document</param>
         /// <param name="tile">Tile to load</param>
         /// <returns>Whether the import was successful.</returns>
-        private bool LoadGLB(RhinoDoc doc, Tile tile) {
+        private bool LoadGLB(RhinoDoc doc, Tile tile, Point3d targetPoint) {
             string glbLink = tile.Contents[0].Uri.ToString();
+            // Check that the link is indeed a GLB
+            string[] linkparts = glbLink.Split('.');
+            if (linkparts[linkparts.Length - 1] != "glb") return false;
+
             byte[] glbBytes = fetchGLBFromAPI(_gmapsClient, $"{glbLink}?key={key}&session={session}");
 
             string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
             File.WriteAllBytes(tempPath, glbBytes);
-
+            // Console.WriteLine("loaded glb");
+            Console.WriteLine(Helper.GroundDistance(tile.BoundingVolume.Box.Center, targetPoint));
             // Read GLB from temp file
             return doc.Import(tempPath);
         }
@@ -180,15 +184,43 @@ namespace LoadTiles
         /// </summary>
         /// <param name="doc">Active document</param>
         /// <param name="tile">Root tile</param>
-        private void LoadTile(RhinoDoc doc, Tile tile) {
-            // This is very basic. Its children are loaded.
-            // TODO: Load its descendants, taking care to respect "REPLACE" or "ADD" refinement effects.
+        private void LoadTile(RhinoDoc doc, Tile tile, Point3d targetPoint) {
             // TODO: Translate everything to the origin in the application's coordinate system.
-            foreach (Tile childTile in tile.Children) {
-                LoadGLB(doc, childTile);
-            }
+            RhinoApp.WriteLine("Loading...");
+            LoadTile2(doc, tile, targetPoint);
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
             RhinoApp.WriteLine("Loaded.");
+        }
+
+        private void LoadTile2(RhinoDoc doc, Tile tile, Point3d targetPoint) {
+            // Tiles closer to the target point should be rendered at a lower geometric error, i.e. greater detail
+            // Still, this is currently set rather arbitrarily, and should be adjusted to suit the application
+            double threshold = Math.Min(20, Helper.GroundDistance(tile.BoundingVolume.Box.Center, targetPoint)*0.02);
+
+            if (tile.Children == null || tile.Children.Count == 0 || tile.GeometricError < threshold) {
+                if (tile.Contents.Count == 0) return;  // Apparently some tiles are contentless??
+                string link = tile.Contents[0].Uri.ToString();
+                string[] linkparts = link.Split('.');
+                
+                if (linkparts[linkparts.Length - 1] == "glb") {  // Content of this tile is a GLB file
+                    bool pointWithinTile = TileBoundingBox.IsInBox(tile.BoundingVolume.Box, targetPoint);
+                    double distance = pointWithinTile ? 0 : Helper.GroundDistance(tile.BoundingVolume.Box.Center, targetPoint);
+                    // Only load tile if it falls within a certain radius around the target point
+                    double maxRenderDistance = 1000;
+                    if (distance < maxRenderDistance) LoadGLB(doc, tile, targetPoint);
+                }
+                else {   // Content of this tile is a JSON link (make a further API call)
+                    string response = fetchStringFromAPI(_gmapsClient, $"{link}?key={key}&session={session}");
+                    Tile nextTile = Tileset.Deserialize(response, new Uri(link, UriKind.Absolute), Transform.Identity).Root;  // TODO: Change transform
+                    LoadTile2(doc, nextTile, targetPoint);
+                }
+            }
+            else {
+                if (tile.Refine == Refine.ADD) LoadGLB(doc, tile, targetPoint);
+                foreach (Tile childTile in tile.Children) {
+                    LoadTile2(doc, childTile, targetPoint);
+                }
+            }
         }
 
         /// <summary>
@@ -230,11 +262,12 @@ namespace LoadTiles
             // Configure location to render
             double lat = result.latitude;
             double lon = result.longitude;
-            double altitude = 60;  // Chosen arbitrarily
+            double altitude = 0;  // TODO: Check if this is actually important and should be user-specified
             double geometricErrorLimit = 100;  // Chosen arbitrarily, but should fetch a tile at a decent zoom level
 
-            Tile tile = FetchTile(Helper.LatLonToEPSG4978(lat, lon, altitude), geometricErrorLimit);
-            LoadTile(doc, tile);
+            Point3d targetPoint = Helper.LatLonToEPSG4978(lat, lon, altitude);
+            Tile tile = FetchTile(targetPoint, geometricErrorLimit);
+            LoadTile(doc, tile, targetPoint);
             return Result.Success;
         }
     }
