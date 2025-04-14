@@ -9,6 +9,7 @@ using System.IO;
 using TilesData;
 using Rhino.Geometry;
 using HelloRhinoCommon;
+using System.Linq;
 
 namespace LoadTiles
 {
@@ -185,9 +186,30 @@ namespace LoadTiles
         /// <param name="doc">Active document</param>
         /// <param name="tile">Root tile</param>
         private void LoadTile(RhinoDoc doc, Tile tile, Point3d targetPoint) {
-            // TODO: Translate everything to the origin in the application's coordinate system.
+            var before = doc.Objects.GetObjectList(Rhino.DocObjects.ObjectType.AnyObject);
+
             RhinoApp.WriteLine("Loading...");
             LoadTile2(doc, tile, targetPoint);
+
+            Point3d center = tile.BoundingVolume.Box.Center;
+            Vector3d X = tile.BoundingVolume.Box.X;
+            Vector3d Y = tile.BoundingVolume.Box.Y;
+            Vector3d Z = tile.BoundingVolume.Box.Z;
+
+            // Calculates transformation needed to move to Rhino3d's origin
+            Transform toOrigin = Transform.Translation(-center.X*1000, -center.Y*1000, -center.Z*1000);
+            Transform rotate = Transform.Rotation(X/X.Length, Y/Y.Length, Z/Z.Length, new Vector3d(0,0,1), new Vector3d(0,-1,0), new Vector3d(1,0,0));
+            Transform moveRot = rotate * toOrigin;
+
+            // Finds all objects imported from 3d tile
+            var after = doc.Objects.GetObjectList(Rhino.DocObjects.ObjectType.AnyObject);
+            var imported = after.Except(before);
+
+            // Applies the transformation to all loaded tiles
+            foreach (var obj in imported) {
+                doc.Objects.Transform(obj, moveRot, true);
+            }
+
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
             RhinoApp.WriteLine("Loaded.");
         }
