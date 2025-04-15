@@ -197,7 +197,7 @@ namespace LoadTiles
             Vector3d Z = tile.BoundingVolume.Box.Z;
 
             // Calculates transformation needed to move to Rhino3d's origin
-            Transform toOrigin = Transform.Translation(-center.X*1000, -center.Y*1000, -center.Z*1000);
+            Transform toOrigin = Transform.Translation(-targetPoint.X*1000, -targetPoint.Y*1000, -targetPoint.Z*1000);
             Transform rotate = Transform.Rotation(X/X.Length, Y/Y.Length, Z/Z.Length, new Vector3d(0,0,1), new Vector3d(0,-1,0), new Vector3d(1,0,0));
             Transform moveRot = rotate * toOrigin;
 
