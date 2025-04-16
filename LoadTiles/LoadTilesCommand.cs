@@ -42,18 +42,6 @@ namespace LoadTiles
         ///<returns>The command name as it appears on the Rhino command line.</returns>
         public override string EnglishName => "Fetch";
 
-        public void hideDisplayConduit() {
-            if (this.displayConduit != null) {
-                this.displayConduit.Enabled = false;
-            }
-        }
-
-        public void restoreDisplayConduit() {
-            if (this.displayConduit != null) {
-                this.displayConduit.Enabled = true;
-            }
-        }
-
         /// <summary>
         /// Makes an API call to retrieve a JSON object
         /// </summary>
@@ -312,6 +300,8 @@ namespace LoadTiles
                 Console.WriteLine(url);
             }
 
+            // Keep track of which objects already exist in the project.
+            // This is so that, once we've imported the objects from Google Maps/whatever else, we can delete only these new ones.
             List<Guid> existingObjects = new List<Guid>();
             foreach (var obj in doc.Objects) {
                 existingObjects.Add(obj.Id);
@@ -324,6 +314,7 @@ namespace LoadTiles
             this.altitude = 0;  // TODO: Make this user-specified - it affects whether the tiles are loaded above/below the XY-plane
             double renderDistance = 200;  // Radius around target point to load. TODO: Make this user-specified
 
+            // Used to display the objects we import, even though they don't "exist" in the traditional sense in the project.
             this.displayConduit = new TemporaryGeometryConduit();
 
             Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
@@ -333,8 +324,8 @@ namespace LoadTiles
             TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude);
 
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
-            RhinoApp.WriteLine("Tiles loaded.");
 
+            // We've imported our objects. We now need to delete them from the active document and instead put them in the TemporaryGeometryConduit.
             foreach (var obj in doc.Objects) {
                 if (!existingObjects.Contains(obj.Id)) {
                     this.displayConduit.addObject(obj);
@@ -342,7 +333,10 @@ namespace LoadTiles
                 }
             }
 
+            // Clean up after ourselves. This stops really large file sizes when saving afterwards.
             RhinoApp.RunScript("_-Purge All _Enter", false);
+
+            RhinoApp.WriteLine("Tiles loaded.");
 
             return Result.Success;
         }

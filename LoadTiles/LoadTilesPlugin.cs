@@ -21,46 +21,6 @@ namespace LoadTiles
             Instance = this;
         }
 
-        protected override Rhino.PlugIns.LoadReturnCode OnLoad(ref string errorMessage) {
-            RhinoDoc.BeginSaveDocument += OnBeginSaveDocument;
-            RhinoDoc.EndSaveDocument += OnEndSaveDocument;
-            return base.OnLoad(ref errorMessage);
-        }
-
-        private void OnBeginSaveDocument(object sender, EventArgs e) {
-            Rhino.Commands.Command[] commands = GetCommands();
-            LoadTilesCommand loadTilesCommand = null;
-            foreach (Rhino.Commands.Command command in commands) {
-                if (command.EnglishName == "Fetch") {
-                    loadTilesCommand = (LoadTilesCommand) command;
-                }
-            }
-            if (loadTilesCommand == null) {
-                Console.WriteLine("Couldn't find the LoadTilesCommand object. Can't automatically hide the display conduit.");
-                return;
-            }
-
-            Console.WriteLine("User is attempting to save. We will hide the display conduit if possible.");
-            loadTilesCommand.hideDisplayConduit();
-        }
-
-        private void OnEndSaveDocument(object sender, EventArgs e) {
-            Rhino.Commands.Command[] commands = GetCommands();
-            LoadTilesCommand loadTilesCommand = null;
-            foreach (Rhino.Commands.Command command in commands) {
-                if (command.EnglishName == "Fetch") {
-                    loadTilesCommand = (LoadTilesCommand) command;
-                }
-            }
-            if (loadTilesCommand == null) {
-                Console.WriteLine("Couldn't find the LoadTilesCommand object. Can't automatically restore the display conduit.");
-                return;
-            }
-
-            Console.WriteLine("Save has been completed. We will restore the display conduit if possible.");
-            loadTilesCommand.restoreDisplayConduit();
-        }
-
         /// <summary>
         /// Called whenever Rhino is about to save a .3dm file. If you want to save
         /// plug-in document data when a model is saved in a version 5 .3dm file, then

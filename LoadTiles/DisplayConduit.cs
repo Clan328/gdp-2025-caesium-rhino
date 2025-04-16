@@ -15,6 +15,10 @@ public class TemporaryGeometryConduit : DisplayConduit {
         this.Enabled = true;
     }
 
+    /// <summary>
+    /// This function is called to determine the bounding box of our DisplayConduit.
+    /// If we don't set it properly, it will clip off the screen sometimes, even when it should otherwise be visible.
+    /// </summary>
     protected override void CalculateBoundingBox(CalculateBoundingBoxEventArgs e) {
         base.CalculateBoundingBox(e);
         var bbox = new BoundingBox();
@@ -25,6 +29,7 @@ public class TemporaryGeometryConduit : DisplayConduit {
         e.IncludeBoundingBox(bbox);
     }
 
+    // We use the function PreDrawObjects so that our imported objects are drawn behind the objects created by the user.
     protected override void PreDrawObjects(DrawEventArgs e) {
         foreach (var obj in this.importedObjects) {
             e.Display.DrawObject(obj);
