@@ -183,6 +183,11 @@ public class GDPDialog : Dialog<DialogResult> {
         };
     }
 
+    public void prefillData(double latitude, double longitude) {
+        this.latitudeTextBox.Text = latitude.ToString();
+        this.longitudeTextBox.Text = longitude.ToString();
+    }
+
     private DialogResult getUserInput() {
         string apiKey = AuthSession.CesiumAccessToken;
         string modelName = this.modelDropDown.SelectedValue.ToString();
