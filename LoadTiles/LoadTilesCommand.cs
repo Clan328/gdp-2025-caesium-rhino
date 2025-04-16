@@ -190,13 +190,13 @@ namespace LoadTiles
             RhinoApp.WriteLine("Loading...");
             LoadTile2(doc, tile, targetPoint);
 
-            Point3d center = tile.BoundingVolume.Box.Center;
+            double scaleFactor = RhinoMath.UnitScale(UnitSystem.Meters, RhinoDoc.ActiveDoc.ModelUnitSystem);
             Vector3d X = tile.BoundingVolume.Box.X;
             Vector3d Y = tile.BoundingVolume.Box.Y;
             Vector3d Z = tile.BoundingVolume.Box.Z;
 
             // Calculates transformation needed to move to Rhino3d's origin
-            Transform toOrigin = Transform.Translation(-targetPoint.X*1000, -targetPoint.Y*1000, -targetPoint.Z*1000);
+            Transform toOrigin = Transform.Translation(-targetPoint.X*scaleFactor, -targetPoint.Y*scaleFactor, -targetPoint.Z*scaleFactor);
             Transform rotate = Transform.Rotation(X/X.Length, Y/Y.Length, Z/Z.Length, new Vector3d(0,0,1), new Vector3d(0,-1,0), new Vector3d(1,0,0));
             Transform moveRot = rotate * toOrigin;
 
@@ -227,7 +227,7 @@ namespace LoadTiles
                     bool pointWithinTile = TileBoundingBox.IsInBox(tile.BoundingVolume.Box, targetPoint);
                     double distance = pointWithinTile ? 0 : Helper.GroundDistance(tile.BoundingVolume.Box.Center, targetPoint);
                     // Only load tile if it falls within a certain radius around the target point
-                    double maxRenderDistance = 1000;
+                    double maxRenderDistance = 200;
                     if (distance < maxRenderDistance) LoadGLB(doc, tile, targetPoint);
                 }
                 else {   // Content of this tile is a JSON link (make a further API call)
