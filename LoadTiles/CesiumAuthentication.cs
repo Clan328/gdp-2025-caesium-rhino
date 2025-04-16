@@ -11,13 +11,18 @@ using System.Threading.Tasks;
 using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Text.Json;
+using LoadTiles;
 
 namespace CesiumAuthentication
 {
     public static class AuthSession
     {
         // Tracks the access token for the session, given by the most recent log-in.
-        public static string? CesiumAccessToken { get; private set; }
+        public static string CesiumAccessToken
+        {
+            get { return LoadTilesPlugin.Instance.Settings.GetString("CesiumAccessToken", ""); }
+            private set { LoadTilesPlugin.Instance.Settings.SetString("CesiumAccessToken", value); }
+        }
 
         // Tracks logged-in status
         public static bool IsLoggedIn => !string.IsNullOrEmpty(CesiumAccessToken);
@@ -67,7 +72,7 @@ namespace CesiumAuthentication
             string responseString = Task.Run(() => response.Content.ReadAsStringAsync()).GetAwaiter().GetResult();
 
             var responseValues = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString);
-
+            
             CesiumAccessToken = responseValues["access_token"];
             return CesiumAccessToken;
         }
@@ -75,7 +80,7 @@ namespace CesiumAuthentication
         // Logs out the user, returns true if the user was logged in before
         public static bool Logout() {
             if (IsLoggedIn) {
-                CesiumAccessToken = null;
+                CesiumAccessToken = "";
                 return true;
             }
             return false;
