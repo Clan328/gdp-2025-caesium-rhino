@@ -95,14 +95,14 @@ public class GDPDialog : Dialog<DialogResult> {
             if (AuthSession.IsLoggedIn)
             {
                 // Log out the user
-                AuthSession.LogOut();
+                AuthSession.Logout();
                 MessageBox.Show("Logging out...");
                 authButton.Text = "Log In";
                 loggedInLabel.Text = "You are not logged in.";
                 return;
             }
 
-            string? key = AuthSession.LogIn();
+            string? key = AuthSession.Login();
 
             if (AuthSession.IsLoggedIn)
             {
