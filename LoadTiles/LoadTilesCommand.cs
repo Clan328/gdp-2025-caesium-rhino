@@ -14,12 +14,14 @@ using Rhino.DocObjects;
 
 namespace LoadTiles
 {
+    [Rhino.Commands.CommandStyle(Rhino.Commands.Style.ScriptRunner)]
     public class LoadTilesCommand : Command
     {
         private readonly HttpClient _cesiumClient, _gmapsClient;
         public double latitude, longitude, altitude; // We store the last inputted values so that we can write them to file when saving.
         public bool locationInputted = false;
         private string key, session, url;  // For calls to the *Google Maps 3D Tiles* API, not Cesium
+        private TemporaryGeometryConduit displayConduit;
         public LoadTilesCommand()
         {
             // Initialise Http Clients
@@ -39,6 +41,18 @@ namespace LoadTiles
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
         public override string EnglishName => "Fetch";
+
+        public void hideDisplayConduit() {
+            if (this.displayConduit != null) {
+                this.displayConduit.Enabled = false;
+            }
+        }
+
+        public void restoreDisplayConduit() {
+            if (this.displayConduit != null) {
+                this.displayConduit.Enabled = true;
+            }
+        }
 
         /// <summary>
         /// Makes an API call to retrieve a JSON object
@@ -298,12 +312,19 @@ namespace LoadTiles
                 Console.WriteLine(url);
             }
 
+            List<Guid> existingObjects = new List<Guid>();
+            foreach (var obj in doc.Objects) {
+                existingObjects.Add(obj.Id);
+            }
+
             // Configure location to render
             this.latitude = result.latitude;
             this.longitude = result.longitude;
             this.locationInputted = true;
             this.altitude = 0;  // TODO: Make this user-specified - it affects whether the tiles are loaded above/below the XY-plane
             double renderDistance = 200;  // Radius around target point to load. TODO: Make this user-specified
+
+            this.displayConduit = new TemporaryGeometryConduit();
 
             Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
             // Load tiles
@@ -313,6 +334,16 @@ namespace LoadTiles
 
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
             RhinoApp.WriteLine("Tiles loaded.");
+
+            foreach (var obj in doc.Objects) {
+                if (!existingObjects.Contains(obj.Id)) {
+                    this.displayConduit.addObject(obj);
+                    doc.Objects.Delete(obj);
+                }
+            }
+
+            RhinoApp.RunScript("_-Purge All _Enter", false);
+
             return Result.Success;
         }
     }
