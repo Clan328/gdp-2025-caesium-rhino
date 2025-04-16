@@ -14,6 +14,7 @@ using Rhino.DocObjects;
 
 namespace LoadTiles
 {
+    [Rhino.Commands.CommandStyle(Rhino.Commands.Style.ScriptRunner)]
     public class LoadTilesCommand : Command
     {
         private readonly HttpClient _cesiumClient, _gmapsClient;
@@ -340,6 +341,8 @@ namespace LoadTiles
                     doc.Objects.Delete(obj);
                 }
             }
+
+            RhinoApp.RunScript("_-Purge All _Enter", false);
 
             return Result.Success;
         }
