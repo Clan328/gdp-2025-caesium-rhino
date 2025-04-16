@@ -30,7 +30,6 @@
   
   <ItemGroup>
     <ProjectReference Include="..\TilesData\TilesData.csproj" />
-    <ProjectReference Include="..\GUI\HelloRhinoCommon\HelloRhinoCommon.csproj" />
   </ItemGroup>
   
 </Project>

@@ -9,17 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TilesDataTest", "TilesDataT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoadTiles", "LoadTiles\LoadTiles.csproj", "{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GUI", "GUI", "{D6D6AE56-EB07-4C55-B1E5-B11276D819D8}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloRhinoCommon", "GUI\HelloRhinoCommon\HelloRhinoCommon.csproj", "{0AC23C54-8059-46E3-87DB-FC5EBB5114E6}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{DFB94E6A-045B-4C86-976C-08E4ADBB8603}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -34,12 +27,8 @@ Global
 		{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0AC23C54-8059-46E3-87DB-FC5EBB5114E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0AC23C54-8059-46E3-87DB-FC5EBB5114E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0AC23C54-8059-46E3-87DB-FC5EBB5114E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0AC23C54-8059-46E3-87DB-FC5EBB5114E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{0AC23C54-8059-46E3-87DB-FC5EBB5114E6} = {D6D6AE56-EB07-4C55-B1E5-B11276D819D8}
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
