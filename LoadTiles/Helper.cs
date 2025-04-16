@@ -1,5 +1,6 @@
 using System;
 using Rhino.Geometry;
+using TilesData;
 
 namespace LoadTiles;
 
@@ -79,5 +80,27 @@ public static class Helper {
         double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         double distance = EQ_RADIUS * c;  // Distance in meters
         return distance;
+    }
+
+    /// <summary>
+    /// Calculates the distance from a point to the nearest edge of a tile.
+    /// If the point is inside the tile, the distance is 0.
+    /// Only implemented for tiles with a rectangular bounding box.
+    /// </summary>
+    /// <param name="point"></param>
+    /// <param name="tile"></param>
+    /// <returns></returns>
+    public static double PointDistanceToTile(Point3d point, Tile tile) {
+        if (tile.BoundingVolume.Box == null) {
+            throw new NotImplementedException("Only rectangular bounding boxes are supported.");
+        }
+        TileBoundingBox box = tile.BoundingVolume.Box;
+        if (TileBoundingBox.IsInBox(box, point)) {
+            return 0.0;
+        } else {
+            Brep brepBox = box.AsBox().ToBrep();
+            Point3d boundaryPoint = brepBox.ClosestPoint(point);
+            return GroundDistance(point, boundaryPoint);
+        }
     }
 }
