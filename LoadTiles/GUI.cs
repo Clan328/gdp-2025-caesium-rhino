@@ -4,7 +4,7 @@ using Rhino.Commands;
 using Eto.Drawing;
 using Eto.Forms;
 using Rhino.UI;
-using CesiumAuth;
+using CesiumAuthentication;
 
 namespace LoadTiles;
 
@@ -95,19 +95,17 @@ public class GDPDialog : Dialog<DialogResult> {
             if (AuthSession.IsLoggedIn)
             {
                 // Log out the user
-                AuthSession.CesiumAccessToken = null;
+                AuthSession.LogOut();
                 MessageBox.Show("Logging out...");
                 authButton.Text = "Log In";
                 loggedInLabel.Text = "You are not logged in.";
                 return;
             }
 
-            var authCommand = new AuthenticateCommand();
-            string? key = authCommand.AuthenticatePublic();
+            string? key = AuthSession.LogIn();
 
-            if (key != null)
+            if (AuthSession.IsLoggedIn)
             {
-                AuthSession.CesiumAccessToken = key;
                 MessageBox.Show("Authentication successful!");
                 authButton.Text = "Log Out";
                 loggedInLabel.Text = "Logged in with key: " + key;
