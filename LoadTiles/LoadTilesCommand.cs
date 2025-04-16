@@ -305,11 +305,11 @@ namespace LoadTiles
             this.altitude = 0;  // TODO: Make this user-specified - it affects whether the tiles are loaded above/below the XY-plane
             double renderDistance = 200;  // Radius around target point to load. TODO: Make this user-specified
 
-            Point3d targetPoint = Helper.LatLonToEPSG4978(lat, lon, altitude);
+            Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
             // Load tiles
             IEnumerable<RhinoObject> objects = LoadTiles(doc, targetPoint, renderDistance);
             // Move tiles to origin
-            TranslateLoadedTiles(doc, objects, targetPoint, lat, lon);
+            TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude);
 
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
             RhinoApp.WriteLine("Tiles loaded.");
