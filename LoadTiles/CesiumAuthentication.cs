@@ -11,13 +11,18 @@ using System.Threading.Tasks;
 using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Text.Json;
+using LoadTiles;
 
 namespace CesiumAuthentication
 {
     public static class AuthSession
     {
         // Tracks the access token for the session, given by the most recent log-in.
-        public static string? CesiumAccessToken { get; private set; }
+        public static string CesiumAccessToken
+        {
+            get { return LoadTilesPlugin.Instance.Settings.GetString("CesiumAccessToken", ""); }
+            private set { LoadTilesPlugin.Instance.Settings.SetString("CesiumAccessToken", value); }
+        }
 
         // Tracks logged-in status
         public static bool IsLoggedIn => !string.IsNullOrEmpty(CesiumAccessToken);
@@ -28,7 +33,7 @@ namespace CesiumAuthentication
         private static readonly IPEndPoint DefaultLoopbackEndpoint = new IPEndPoint(IPAddress.Loopback, port: 0);
 
         // Logins user, or returns current api key if they are already logged in
-        public static string? LogIn() {
+        public static string? Login() {
             if (IsLoggedIn) return CesiumAccessToken;
 
             int port = GetAvailablePort();
@@ -41,7 +46,7 @@ namespace CesiumAuthentication
                 UseShellExecute = true
             });
 
-            string code = ListenCode($"http://127.0.0.1:{port}/", state);
+            string? code = ListenCode($"http://127.0.0.1:{port}/", state);
 
             if (code == null) {
                 // TODO: Throw error
@@ -67,15 +72,15 @@ namespace CesiumAuthentication
             string responseString = Task.Run(() => response.Content.ReadAsStringAsync()).GetAwaiter().GetResult();
 
             var responseValues = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString);
-
+            
             CesiumAccessToken = responseValues["access_token"];
             return CesiumAccessToken;
         }
 
         // Logs out the user, returns true if the user was logged in before
-        public static bool LogOut() {
+        public static bool Logout() {
             if (IsLoggedIn) {
-                CesiumAccessToken = null;
+                CesiumAccessToken = "";
                 return true;
             }
             return false;
@@ -149,10 +154,10 @@ namespace CesiumAuthentication
     }    
 
     // Manually logs the user out of the Cesium account via the command line.
-    public class LogOutCommand : Command
+    public class CesiumLogoutCommand : Command
     {
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "LogOut";
+        public override string EnglishName => "CesiumLogout";
 
         /// <summary>
         /// Handles the user running the command.
@@ -161,7 +166,7 @@ namespace CesiumAuthentication
         {
             RhinoApp.WriteLine("Logging out...");
 
-            AuthSession.LogOut();
+            AuthSession.Logout();
 
             RhinoApp.WriteLine("Logged out successfully!");
 
@@ -170,10 +175,10 @@ namespace CesiumAuthentication
     }
 
 
-    public class LogInCommand : Command
+    public class CesiumLoginCommand : Command
     {
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "LogIn";
+        public override string EnglishName => "CesiumLogin";
 
         /// <summary>
         /// Handles the user running the command.
@@ -182,9 +187,8 @@ namespace CesiumAuthentication
         {
             RhinoApp.WriteLine("Authenticating...");
 
-            string? key = AuthSession.LogIn();
-
-            if (key == null) return Result.Failure;
+            string? key = AuthSession.Login();
+            if (!AuthSession.IsLoggedIn) return Result.Failure;
 
             RhinoApp.WriteLine("Authentication successful!");
 
