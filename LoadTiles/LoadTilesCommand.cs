@@ -15,6 +15,8 @@ namespace LoadTiles
     public class LoadTilesCommand : Command
     {
         private readonly HttpClient _cesiumClient, _gmapsClient;
+        public double latitude, longitude, altitude; // We store the last inputted values so that we can write them to file when saving.
+        public bool locationInputted = false;
         private string key, session, url;  // For calls to the *Google Maps 3D Tiles* API, not Cesium
         public LoadTilesCommand()
         {
@@ -263,6 +265,9 @@ namespace LoadTiles
             bool valuesNotInitialised = key == null || session == null || url == null;
 
             GDPDialog dialog = new();
+            if (this.locationInputted) {
+                dialog.prefillData(this.latitude, this.longitude);
+            }
             DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow); 
 
             if (result == null) {
@@ -281,12 +286,13 @@ namespace LoadTiles
             }
 
             // Configure location to render
-            double lat = result.latitude;
-            double lon = result.longitude;
-            double altitude = 0;  // TODO: Check if this is actually important and should be user-specified
+            this.latitude = result.latitude;
+            this.longitude = result.longitude;
+            this.locationInputted = true;
+            this.altitude = 0;  // TODO: Check if this is actually important and should be user-specified
             double geometricErrorLimit = 100;  // Chosen arbitrarily, but should fetch a tile at a decent zoom level
 
-            Point3d targetPoint = Helper.LatLonToEPSG4978(lat, lon, altitude);
+            Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
             Tile tile = FetchTile(targetPoint, geometricErrorLimit);
             LoadTile(doc, tile, targetPoint);
             return Result.Success;
