@@ -9,6 +9,8 @@ using System.IO;
 using TilesData;
 using Rhino.Geometry;
 using System.Linq;
+using System.Collections.Generic;
+using Rhino.DocObjects;
 
 namespace LoadTiles
 {
@@ -112,54 +114,6 @@ namespace LoadTiles
         }
 
         /// <summary>
-        /// Navigates the asset tree to find the parent tile which contains, as descendants, all the tiles around the specified location we might want to load.
-        /// </summary>
-        /// <param name="point">Location that the tile should contain</param>
-        /// <param name="geometricError">Upper bound of geometric error of parent tile</param>
-        /// <returns>Tile at specified location</returns>
-        private Tile FetchTile(Point3d point, double geometricErrorLimit) {
-            HttpClient client = _gmapsClient;
-            string response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
-            Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute), Transform.Identity); // TODO: Change transform
-            Tile tile = tileset.Root;
-            bool done = false;
-            while (!done) {
-                // Recursively traverses down the tree of assets to find children at finer levels of detail
-                tile = tileset.Root;
-                while (!done && tile.Children != null && tile.Children.Count > 0) {
-                    // The bounding boxes of multiple children may overlap.
-                    // We choose the child tile whose centre is closest to the target point.
-                    Tile? nextTile = null;
-                    double closest = double.MaxValue;
-
-                    foreach (Tile childTile in tile.Children) {
-                        TileBoundingBox bound = childTile.BoundingVolume.Box;
-                        if (TileBoundingBox.IsInBox(bound, point)) {
-                            double distance = point.DistanceTo(bound.Center);
-                            if (distance < closest) {
-                                nextTile = childTile;
-                                closest = distance;
-                            } 
-                        }
-                    }
-                    // We are done if either of these are true
-                    //   - nextTile == null implying our target point is not in the bounds of any child tile
-                    //   - nextTile.GeometricError < geometricErrorLimit implying we have found a tile at the sufficient level of detail
-                    if (nextTile == null || nextTile.GeometricError < geometricErrorLimit) done = true;
-                    if (nextTile != null) tile = nextTile;
-                }
-                if (!done) {
-                    // Make a further API call, to fetch tiles at a finer level of detail
-                    url = tile.Contents[0].Uri.ToString();
-                    response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
-                    tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute), Transform.Identity); // TODO: Change transform
-                }
-                
-            }
-            return tile;
-        }
-
-        /// <summary>
         /// Loads and imports the GLB associated with the given tile.
         /// </summary>
         /// <param name="doc">Active document</param>
@@ -182,66 +136,125 @@ namespace LoadTiles
         }
 
         /// <summary>
-        /// Loads the data at the subtree rooted at the given tile.
+        /// Translates the loaded tiles to the origin in Rhino3d.
         /// </summary>
         /// <param name="doc">Active document</param>
-        /// <param name="tile">Root tile</param>
-        private void LoadTile(RhinoDoc doc, Tile tile, Point3d targetPoint) {
-            var before = doc.Objects.GetObjectList(Rhino.DocObjects.ObjectType.AnyObject);
-
-            RhinoApp.WriteLine("Loading...");
-            LoadTile2(doc, tile, targetPoint);
-
+        /// <param name="objects">Imported objects</param>
+        /// <param name="targetPoint">Point to translate to origin</param>
+        /// <param name="lat">Corresponding latitude of targetPoint</param>
+        /// <param name="lon">Corresponding longitude of targetPoint</param>
+        private void TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon) {
             double scaleFactor = RhinoMath.UnitScale(UnitSystem.Meters, RhinoDoc.ActiveDoc.ModelUnitSystem);
-            Vector3d X = tile.BoundingVolume.Box.X;
-            Vector3d Y = tile.BoundingVolume.Box.Y;
-            Vector3d Z = tile.BoundingVolume.Box.Z;
+            
+            // Calculate the three orthogonal vectors for rotation
+            Vector3d up = new Vector3d(targetPoint);
+            up.Unitize();
+            Point3d pointToNorth = lat <= 89 ?
+                Helper.LatLonToEPSG4978(lat + 1, lon, 0) :
+                Helper.LatLonToEPSG4978(179 - lat, lon + 180, 0);
+            Vector3d pointToNorthVec = new Vector3d(pointToNorth);
+            Vector3d north = pointToNorthVec - up * pointToNorthVec * up;
+            north.Unitize();
+            Vector3d east = Vector3d.CrossProduct(north, up);
 
             // Calculates transformation needed to move to Rhino3d's origin
             Transform toOrigin = Transform.Translation(-targetPoint.X*scaleFactor, -targetPoint.Y*scaleFactor, -targetPoint.Z*scaleFactor);
-            Transform rotate = Transform.Rotation(X/X.Length, Y/Y.Length, Z/Z.Length, new Vector3d(0,0,1), new Vector3d(0,-1,0), new Vector3d(1,0,0));
+            Transform rotate = Transform.Rotation(east, north, up, new Vector3d(1,0,0), new Vector3d(0,1,0), new Vector3d(0,0,1));
             Transform moveRot = rotate * toOrigin;
 
-            // Finds all objects imported from 3d tile
-            var after = doc.Objects.GetObjectList(Rhino.DocObjects.ObjectType.AnyObject);
-            var imported = after.Except(before);
-
             // Applies the transformation to all loaded tiles
-            foreach (var obj in imported) {
+            foreach (RhinoObject obj in objects) {
                 doc.Objects.Transform(obj, moveRot, true);
             }
-
-            doc.Views.ActiveView.ActiveViewport.ZoomExtents();
-            RhinoApp.WriteLine("Loaded.");
         }
 
-        private void LoadTile2(RhinoDoc doc, Tile tile, Point3d targetPoint) {
-            // Tiles closer to the target point should be rendered at a lower geometric error, i.e. greater detail
-            // Still, this is currently set rather arbitrarily, and should be adjusted to suit the application
-            double threshold = Math.Min(20, Helper.GroundDistance(tile.BoundingVolume.Box.Center, targetPoint)*0.02);
+        /// <summary>
+        /// Loads tiles from the Google Maps API, in a radius around the specified location.
+        /// </summary>
+        /// <param name="doc">Active document</param>
+        /// <param name="targetPoint">Point3d object corresponding to specified location</param>
+        /// <param name="renderDistance">Radius (metres) around the point to load. Formally this loads all tiles 
+        /// whose bounding box's closest edge to the point is within this distance.</param>
+        /// <returns>List of Rhino objects that were loaded</returns>
+        private IEnumerable<RhinoObject> LoadTiles(RhinoDoc doc, Point3d targetPoint, double renderDistance) {
+            RhinoApp.WriteLine("Loading tiles...");
 
-            if (tile.Children == null || tile.Children.Count == 0 || tile.GeometricError < threshold) {
-                if (tile.Contents.Count == 0) return;  // Apparently some tiles are contentless??
+            // Call the API to get the root tile
+            HttpClient client = _gmapsClient;
+            string response = fetchStringFromAPI(client, $"{url}?key={key}&session={session}");
+            Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute), Transform.Identity);
+            Tile tile = tileset.Root;
+
+            var before = doc.Objects.GetObjectList(ObjectType.AnyObject);
+
+            // Recursively load tiles from API
+            TraverseTileTree(doc, tile, targetPoint, renderDistance);
+
+            // Finds all objects imported from 3d tile
+            var after = doc.Objects.GetObjectList(ObjectType.AnyObject);
+            return after.Except(before);
+        }
+
+        /// <summary>
+        /// Check if the tile is sufficiently detailed.
+        /// This determines whether the tile should be loaded, or if it should be refined instead.
+        /// <br/>
+        /// This is currently based on the distance between the tile and the target point, and the geometric error of the tile.
+        /// <br/>
+        /// TODO: Make this based on SSE (Screen Space Error) instead, which requires distance between tile and camera
+        /// </summary>
+        /// <param name="tile">Tile to check</param>
+        /// <param name="targetPoint">Point3d object to check distance to</param>
+        /// <returns>Whether the tile should be rendered instead of refined.</returns>
+        private bool IsSufficientlyDetailed(Tile tile, Point3d targetPoint) {
+            double distance = Helper.PointDistanceToTile(targetPoint, tile);
+            double geometricError = tile.GeometricError;
+            double threshold = Math.Min(20, distance*0.02);  // TODO: Refine this, or make this a user-specified value?
+            return geometricError < threshold;
+        }
+
+        /// <summary>
+        /// Recursively traverses the tile tree using DFS, loading tiles as necessary.
+        /// </summary>
+        /// <param name="doc">Active document</param>
+        /// <param name="tile">Tile to load and/or refine</param>
+        /// <param name="targetPoint"></param>
+        /// <param name="renderDistance"></param>
+        private void TraverseTileTree(RhinoDoc doc, Tile tile, Point3d targetPoint, double renderDistance) {
+            bool tileHasContent = tile.Contents.Count > 0;
+
+            List<Tile> childrenWithinRenderDistance = tile.Children.FindAll(child => Helper.PointDistanceToTile(targetPoint, child) <= renderDistance);
+            bool hasChildrenWithinDistance = childrenWithinRenderDistance.Count > 0;
+
+            bool isSufficientlyDetailed = IsSufficientlyDetailed(tile, targetPoint);
+
+            // Should the tile itself be loaded?
+            bool shouldLoadTile = tileHasContent
+                && (isSufficientlyDetailed || tile.Refine == Refine.ADD || !hasChildrenWithinDistance);
+
+            // Should the GLB of the tile be loaded, if it exists? This weeds out tiles that are too far away,
+            //   by checking if the tile itself is 'close' to the point but none of its children are
+            bool shouldLoadGLB = shouldLoadTile
+                && !(tile.Children.Count > 0 && !hasChildrenWithinDistance);
+
+            // Should the tile be traversed further?
+            bool shouldTraverse = hasChildrenWithinDistance && !isSufficientlyDetailed;
+
+            if (shouldLoadTile) {
                 string link = tile.Contents[0].Uri.ToString();
                 string[] linkparts = link.Split('.');
-                
                 if (linkparts[linkparts.Length - 1] == "glb") {  // Content of this tile is a GLB file
-                    bool pointWithinTile = TileBoundingBox.IsInBox(tile.BoundingVolume.Box, targetPoint);
-                    double distance = pointWithinTile ? 0 : Helper.GroundDistance(tile.BoundingVolume.Box.Center, targetPoint);
-                    // Only load tile if it falls within a certain radius around the target point
-                    double maxRenderDistance = 200;
-                    if (distance < maxRenderDistance) LoadGLB(doc, tile, targetPoint);
+                    if (shouldLoadGLB) LoadGLB(doc, tile, targetPoint);
                 }
                 else {   // Content of this tile is a JSON link (make a further API call)
                     string response = fetchStringFromAPI(_gmapsClient, $"{link}?key={key}&session={session}");
                     Tile nextTile = Tileset.Deserialize(response, new Uri(link, UriKind.Absolute), Transform.Identity).Root;  // TODO: Change transform
-                    LoadTile2(doc, nextTile, targetPoint);
+                    TraverseTileTree(doc, nextTile, targetPoint, renderDistance);
                 }
             }
-            else {
-                if (tile.Refine == Refine.ADD) LoadGLB(doc, tile, targetPoint);
-                foreach (Tile childTile in tile.Children) {
-                    LoadTile2(doc, childTile, targetPoint);
+            if (shouldTraverse) {
+                foreach (Tile childTile in childrenWithinRenderDistance) {
+                    TraverseTileTree(doc, childTile, targetPoint, renderDistance);
                 }
             }
         }
@@ -289,12 +302,17 @@ namespace LoadTiles
             this.latitude = result.latitude;
             this.longitude = result.longitude;
             this.locationInputted = true;
-            this.altitude = 0;  // TODO: Check if this is actually important and should be user-specified
-            double geometricErrorLimit = 100;  // Chosen arbitrarily, but should fetch a tile at a decent zoom level
+            this.altitude = 0;  // TODO: Make this user-specified - it affects whether the tiles are loaded above/below the XY-plane
+            double renderDistance = 200;  // Radius around target point to load. TODO: Make this user-specified
 
-            Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
-            Tile tile = FetchTile(targetPoint, geometricErrorLimit);
-            LoadTile(doc, tile, targetPoint);
+            Point3d targetPoint = Helper.LatLonToEPSG4978(lat, lon, altitude);
+            // Load tiles
+            IEnumerable<RhinoObject> objects = LoadTiles(doc, targetPoint, renderDistance);
+            // Move tiles to origin
+            TranslateLoadedTiles(doc, objects, targetPoint, lat, lon);
+
+            doc.Views.ActiveView.ActiveViewport.ZoomExtents();
+            RhinoApp.WriteLine("Tiles loaded.");
             return Result.Success;
         }
     }
