@@ -8,7 +8,6 @@ using System;
 using System.IO;
 using TilesData;
 using Rhino.Geometry;
-using HelloRhinoCommon;
 using System.Linq;
 
 namespace LoadTiles
@@ -263,8 +262,8 @@ namespace LoadTiles
              */
             bool valuesNotInitialised = key == null || session == null || url == null;
 
-            MyDialog dialog = new();
-            HelloRhinoCommon.DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow); 
+            GDPDialog dialog = new();
+            DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow); 
 
             if (result == null) {
                 RhinoApp.WriteLine("User canceled input.");
