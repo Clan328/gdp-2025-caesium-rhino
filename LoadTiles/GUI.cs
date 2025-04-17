@@ -230,7 +230,7 @@ public class GDPDialog : Dialog<DialogResult> {
         this.selectedModelLabel = new Label {
             Text = this.selectedAsset.name,
             VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10)
+            Font = new Font("Helvetica", 10, FontStyle.Bold)
         };
         var changeModelButton = new Button{Text = "Change"};
         changeModelButton.Click += (sender, e) => {
