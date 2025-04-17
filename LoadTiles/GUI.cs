@@ -397,11 +397,13 @@ public class GDPDialog : Dialog<DialogResult> {
         }
     }
 
-    public void prefillData(double latitude, double longitude, double altitude, double radius) {
+    public void prefillData(double latitude, double longitude, double altitude, double radius, CesiumAsset selectedAsset) {
         this.latitudeTextBox.Text = latitude.ToString();
         this.longitudeTextBox.Text = longitude.ToString();
         this.altitudeTextBox.Text = altitude.ToString();
         this.radiusTextBox.Text = radius.ToString();
+        this.selectedAsset = selectedAsset;
+        this.selectedModelLabel.Text = selectedAsset.name;
     }
 
     private DialogResult getUserInput() {

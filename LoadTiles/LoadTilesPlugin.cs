@@ -59,6 +59,8 @@ namespace LoadTiles
             userDataDictionary.Set("longitude", loadTilesCommand.longitude);
             userDataDictionary.Set("altitude", loadTilesCommand.altitude);
             userDataDictionary.Set("radius", loadTilesCommand.renderDistance);
+            userDataDictionary.Set("assetName", loadTilesCommand.selectedAsset.name);
+            if (loadTilesCommand.selectedAsset.id != null) userDataDictionary.Set("assetId", (int) loadTilesCommand.selectedAsset.id);
             
             // Write the version of our document data
             archive.Write3dmChunkVersion(MAJOR, MINOR);
@@ -78,6 +80,8 @@ namespace LoadTiles
                 double longitude = userDataDictionary.GetDouble("longitude");
                 double altitude = userDataDictionary.GetDouble("altitude");
                 double radius = userDataDictionary.GetDouble("radius");
+                string assetName = userDataDictionary.GetString("assetName", "Google Photorealistic 3D Tiles");
+                int assetId = userDataDictionary.GetInteger("assetId", 2275207);
 
                 Rhino.Commands.Command[] commands = GetCommands();
                 LoadTilesCommand loadTilesCommand = null;
@@ -96,6 +100,10 @@ namespace LoadTiles
                 loadTilesCommand.longitude = longitude;
                 loadTilesCommand.altitude = altitude;
                 loadTilesCommand.renderDistance = radius;
+                loadTilesCommand.selectedAsset = new CesiumAsset(
+                    assetId, assetName,
+                    null, null, "", null, null, null, null, null, null
+                );
                 loadTilesCommand.locationInputted = true;
             }
         }

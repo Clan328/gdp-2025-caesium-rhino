@@ -19,6 +19,7 @@ namespace LoadTiles
     {
         private readonly HttpClient _cesiumClient, _gmapsClient;
         public double latitude, longitude, altitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
+        public CesiumAsset selectedAsset;
         public bool locationInputted = false;
         private string key, session, url;  // For calls to the *Google Maps 3D Tiles* API, not Cesium
         public TemporaryGeometryConduit displayConduit;
@@ -289,7 +290,7 @@ namespace LoadTiles
 
             GDPDialog dialog = new();
             if (this.locationInputted) {
-                dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance);
+                dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance, this.selectedAsset);
             }
             DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow); 
 
@@ -300,8 +301,9 @@ namespace LoadTiles
 
             if (valuesNotInitialised) {
                 string tok = result.apiKey;
+                this.selectedAsset = result.selectedAsset;
                 int assetId = 2275207;
-                if (result.selectedAsset.id != null) assetId = (int) result.selectedAsset.id;
+                if (this.selectedAsset.id != null) assetId = (int) this.selectedAsset.id;
                 Console.WriteLine(assetId); // TODO: actually use this for something.
                 key = GetGMapsKeyFromCesium(tok);
                 (session, url) = GetGMapsSessionToken(key);
