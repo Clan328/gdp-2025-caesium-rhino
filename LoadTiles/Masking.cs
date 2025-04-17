@@ -72,6 +72,38 @@ public class MaskingCommand : Command {
         Console.WriteLine("Tiles intersected:");
         Console.WriteLine(tilesIntersected.Count);
 
+        Mesh[] meshesToUpdate = new Mesh[tilesIntersected.Count];
+        for (int i = 0; i < tilesIntersected.Count; i++) {
+            var geometry = tilesIntersected[i].Geometry;
+            if (geometry is Mesh mesh) {
+                meshesToUpdate[i] = mesh;
+            } else {
+                throw new InvalidOperationException("Expected all geometries to be Meshes, but this isn't the case.");
+            }
+        }
+
+        var targetBrepMesh = Mesh.CreateFromBrep(targetBrep, MeshingParameters.QualityRenderMesh);
+        MeshBooleanOptions options = new() {Tolerance = tolerance};
+        Mesh[] newMeshes = Mesh.CreateBooleanDifference(meshesToUpdate, targetBrepMesh, options, out var _);
+
+        foreach (var tile in tilesIntersected) {
+            loadTilesCommand.displayConduit.importedObjects.Remove(tile);
+        }
+
+        Console.WriteLine("Meshes to add back: " + newMeshes.Length);
+        
+        for (int i = 0; i < newMeshes.Length; i++) {
+            Mesh mesh = newMeshes[i];
+            Guid id = doc.Objects.AddMesh(mesh);
+            RhinoObject obj = doc.Objects.FindId(id);
+            loadTilesCommand.displayConduit.addObject(obj);
+            doc.Objects.Delete(obj);
+        }
+
+        // TODO: fix the above. It produces weird results. When I tried it on dover.3dm, it creates a few really small random meshes. Maybe someone else knows what to do?
+
+        doc.Views.Redraw();
+
         return Result.Success;
     }
 }
