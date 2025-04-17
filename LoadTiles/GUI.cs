@@ -13,11 +13,15 @@ public class DialogResult {
     public string modelName;
     public float latitude;
     public float longitude;
-    public DialogResult(string apiKey, string modelName, float latitude, float longitude) {
+    public float altitude;
+    public double radius;
+    public DialogResult(string apiKey, string modelName, float latitude, float longitude, float altitude, double radius) {
         this.apiKey = apiKey;
         this.modelName = modelName;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.altitude = altitude;
+        this.radius = radius;
     }
 }
 
@@ -26,11 +30,13 @@ public class GDPDialog : Dialog<DialogResult> {
     private DropDown modelDropDown;
     private TextBox latitudeTextBox;
     private TextBox longitudeTextBox;
+    private TextBox altitudeTextBox;
+    private TextBox radiusTextBox;
     private Button authButton;
 
     public GDPDialog() {
         Title = "GDP Plugin Window";
-        ClientSize = new Size(400, 400);
+        ClientSize = new Size(600, 400);
         Resizable = true; // TODO: maybe remove?
 
         var titleLabel = new Label {
@@ -81,7 +87,23 @@ public class GDPDialog : Dialog<DialogResult> {
         };
         this.longitudeTextBox = new TextBox();
 
-    // All Auth stuff :
+        var altitudeLabel = new Label {
+            Text = "Altitude (what are the units? I'm guessing metres?):",
+            VerticalAlignment = VerticalAlignment.Center,
+            Font = new Font("Helvetica", 10)
+        };
+        this.altitudeTextBox = new TextBox();
+        this.altitudeTextBox.Text = "0";
+
+        var radiusLabel = new Label {
+            Text = "Radius (what are the units? I'm guessing metres?)",
+            VerticalAlignment = VerticalAlignment.Center,
+            Font = new Font("Helvetica", 10)
+        };
+        this.radiusTextBox = new TextBox();
+        this.radiusTextBox.Text = "200";
+
+        // All Auth stuff :
         // Display for 'Logged In' / 'Logged Out' status
         var loggedInLabel = new Label {
             Text = (AuthSession.IsLoggedIn ? "Logged in with key: " + AuthSession.CesiumAccessToken : "You are not logged in."),
@@ -159,6 +181,18 @@ public class GDPDialog : Dialog<DialogResult> {
             Items = { null, longitudeLabel, this.longitudeTextBox }
         };
 
+        StackLayout altitudeStackLayout = new StackLayout {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            Items = { null, altitudeLabel, this.altitudeTextBox }
+        };
+
+        StackLayout radiusStackLayout = new StackLayout {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            Items = { null, radiusLabel, this.radiusTextBox }
+        };
+
         StackLayout buttons = new StackLayout {
             Orientation = Orientation.Horizontal,
             Spacing = 5,
@@ -175,6 +209,8 @@ public class GDPDialog : Dialog<DialogResult> {
                 modelStackLayout,
                 latitudeStackLayout,
                 longitudeStackLayout,
+                altitudeStackLayout,
+                radiusStackLayout,
                 new StackLayoutItem(null, expand: true),
                 buttons
             }
@@ -191,8 +227,12 @@ public class GDPDialog : Dialog<DialogResult> {
         string modelName = this.modelDropDown.SelectedValue.ToString();
         string latitudeText = this.latitudeTextBox.Text;
         string longitudeText = this.longitudeTextBox.Text;
+        string altitudeText = this.altitudeTextBox.Text;
+        string radiusText = this.radiusTextBox.Text;
         bool canConvertLatitude = float.TryParse(latitudeText, out float latitude);
         bool canConvertLongitude = float.TryParse(longitudeText, out float longitude);
+        bool canConvertAltitude = float.TryParse(altitudeText, out float altitude);
+        bool canConvertRadius = double.TryParse(radiusText, out double radius);
         bool latitudeValid = canConvertLatitude && latitude >= -90 && latitude <= 90;
         bool longitudeValid = canConvertLongitude && longitude >= -180 && longitude <= 180;
         if (string.IsNullOrWhiteSpace(apiKey)) {
@@ -224,17 +264,39 @@ public class GDPDialog : Dialog<DialogResult> {
             this.longitudeTextBox.TextColor = Colors.Black;
         }
 
+        if (!canConvertAltitude) {
+            MessageBox.Show("You have entered an invalid altitude value.", "Error", MessageBoxType.Error);
+            this.altitudeTextBox.BackgroundColor = Colors.DarkRed;
+            this.altitudeTextBox.TextColor = Colors.White;
+        } else {
+            this.altitudeTextBox.BackgroundColor = Colors.White;
+            this.altitudeTextBox.TextColor = Colors.Black;
+        }
+
+        if (!canConvertRadius) {
+            MessageBox.Show("You have entered an invalid radius value.", "Error", MessageBoxType.Error);
+            this.radiusTextBox.BackgroundColor = Colors.DarkRed;
+            this.radiusTextBox.TextColor = Colors.White;
+        } else {
+            this.radiusTextBox.BackgroundColor = Colors.White;
+            this.radiusTextBox.TextColor = Colors.Black;
+        }
+
         RhinoApp.WriteLine("Fetch Successful! \n" +
             "Model Name: " + modelName + "\n" +
             "Latitude: " + latitude.ToString() + "\n" +
-            "Longitude: " + longitude.ToString()
+            "Longitude: " + longitude.ToString() + "\n" +
+            "Altitude: " + altitude.ToString() + "\n" +
+            "Radius: " + radius.ToString()
         );
 
         return new DialogResult(
             apiKey,
             modelName,
             latitude,
-            longitude
+            longitude,
+            altitude,
+            radius
         );
     }
 }

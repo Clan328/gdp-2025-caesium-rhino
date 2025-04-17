@@ -311,8 +311,8 @@ namespace LoadTiles
             this.latitude = result.latitude;
             this.longitude = result.longitude;
             this.locationInputted = true;
-            this.altitude = 0;  // TODO: Make this user-specified - it affects whether the tiles are loaded above/below the XY-plane
-            double renderDistance = 200;  // Radius around target point to load. TODO: Make this user-specified
+            this.altitude = result.altitude;
+            double renderDistance = result.radius;  // Radius around target point to load.
 
             // Used to display the objects we import, even though they don't "exist" in the traditional sense in the project.
             this.displayConduit = new TemporaryGeometryConduit();
