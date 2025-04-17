@@ -1,23 +1,169 @@
 using System;
 using Rhino;
 using Rhino.Commands;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using Eto.Drawing;
 using Eto.Forms;
 using Rhino.UI;
+using System.Collections.Generic;
+using System.Text.Json;
 using CesiumAuthentication;
 
 namespace LoadTiles;
 
+public record class CesiumAsset (
+    int? id,
+    string name,
+    string? description,
+    string? attribution,
+    string type,
+    int? bytes,
+    DateTimeOffset? dateAdded,
+    string? status,
+    int? percentComplete,
+    bool? archivable,
+    bool? exportable
+);
+
+public record class CesiumAssets (
+    List<CesiumAsset> items
+)
+{
+    public readonly static JsonSerializerOptions JsonSerializerOptions
+    = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        IncludeFields = true
+    };
+
+    public static List<CesiumAsset> FromJson(string data) {
+        return JsonSerializer.Deserialize<CesiumAssets>(data, JsonSerializerOptions).items;
+    }
+}
+
+public class CesiumImportDialog : Dialog<CesiumAsset?> {
+    public CesiumImportDialog(List<CesiumAsset> assets) {
+        Title = "Cesium ION 3D Tile Import";
+        ClientSize = new Size(1200, 640);
+
+        var titleLabel = new Label {
+            Text = "Cesium ION 3D Tile Import",
+            Font = new Font("Helvetica", 18, FontStyle.Bold)
+        };
+
+        var subtitleLabel = new Label {
+            Text = "Choose a 3D Tile to import",
+            Font = new Font("Helvetica", 10)
+        };
+
+        var subtitleLabelPanel = new Panel {
+            Padding = new Padding(0, 0, 0, 10),
+            Content = subtitleLabel
+        };
+
+        var assetsStackLayout = new StackLayout {
+            Orientation = Orientation.Vertical,
+            Spacing = 5,
+            Items = { }
+        }; 
+
+        foreach (CesiumAsset asset in assets) {
+            if (asset.id == null) continue;
+
+            Label nameLabel = new Label {
+                Text = asset.name,
+                Font = new Font("Helvetica", 18, FontStyle.Bold)
+            };
+
+            Label descriptionLabel = null;
+            if (asset.description != null) {
+                descriptionLabel = new Label {
+                    Text = asset.description,
+                    Font = new Font("Helvetica", 10)
+                };
+            }
+
+            Label attributionLabel = null;
+            if (asset.attribution != null) {
+                attributionLabel = new Label {
+                    Text = asset.attribution,
+                    Font = new Font("Helvetica", 10)
+                };
+            }
+
+            Label idLabel = new Label {
+                Text = $"ID: {asset.id}",
+                Font = new Font("Helvetica", 10, FontStyle.Bold)
+            };
+
+            Label dateLabel = null;
+            if (asset.dateAdded != null) {
+                dateLabel = new Label {
+                    Text = $"Date Added: {asset.dateAdded}",
+                    Font = new Font("Helvetica", 10, FontStyle.Bold)
+                };
+            }
+
+            StackLayout metadataStackLayout = new StackLayout {
+                Orientation = Orientation.Horizontal,
+                Spacing = 10,
+                Items = { idLabel, dateLabel }
+            };
+
+            Button importButton = new Button{Text = "Import"};
+            importButton.Click += (sender, e) => {
+                Close(asset);
+            };
+
+            var panel = new Panel {
+                Padding = new Padding(0, 0, 0, 10),
+                Content = new StackLayout {
+                    Padding = 30,
+                    Spacing = 10,
+                    Items = {
+                        nameLabel,
+                        metadataStackLayout,
+                        descriptionLabel,
+                        attributionLabel,
+                        importButton
+                    }
+                }
+            };
+
+            assetsStackLayout.Items.Add(panel);
+        }
+
+        AbortButton = new Button{Text = "Cancel"};
+        AbortButton.Click += (sender, e) => Close(null);
+
+        Content = new StackLayout {
+            Padding = 30,
+            Spacing = 10,
+            Items = {
+                titleLabel,
+                subtitleLabelPanel,
+                new Scrollable {
+                    Content = assetsStackLayout,
+                    Size = new Size(1140, 500)
+                },
+                AbortButton
+            }
+        };
+    }
+}
+
 public class DialogResult {
     public string apiKey;
-    public string modelName;
+    public CesiumAsset selectedAsset;
     public double latitude;
     public double longitude;
     public double altitude;
     public double radius;
-    public DialogResult(string apiKey, string modelName, double latitude, double longitude, double altitude, double radius) {
+    public DialogResult(string apiKey, CesiumAsset selectedAsset, double latitude, double longitude, double altitude, double radius) {
         this.apiKey = apiKey;
-        this.modelName = modelName;
+        this.selectedAsset = selectedAsset;
         this.latitude = latitude;
         this.longitude = longitude;
         this.altitude = altitude;
@@ -27,12 +173,23 @@ public class DialogResult {
 
 public class GDPDialog : Dialog<DialogResult> {
     private TextBox apiKeyTextBox;
-    private DropDown modelDropDown;
     private TextBox latitudeTextBox;
     private TextBox longitudeTextBox;
     private TextBox altitudeTextBox;
     private TextBox radiusTextBox;
     private Button authButton;
+
+    private CesiumAsset selectedAsset;
+    private Label selectedModelLabel;
+    private static readonly HttpClient client = new HttpClient();
+
+    private CesiumAsset getDefaultSelectedAsset() {
+        return new CesiumAsset(
+            2275207,
+            "Google Photorealistic 3D Tiles",
+            null, null, "", null, null, null, null, null, null
+        );
+    }
 
     public GDPDialog() {
         Title = "GDP Plugin Window";
@@ -63,15 +220,21 @@ public class GDPDialog : Dialog<DialogResult> {
         };
         this.apiKeyTextBox = new TextBox{Width = 200};
 
+        this.selectedAsset = this.getDefaultSelectedAsset(); // TODO: save this information with the other .3dm data
+
         var modelLabel = new Label {
             Text = "Model:",
             VerticalAlignment = VerticalAlignment.Center,
             Font = new Font("Helvetica", 10)
         };
-
-        this.modelDropDown = new DropDown {
-            Items = {"Google Maps", "Apple Maps", "Something else"},
-            SelectedIndex = 0
+        this.selectedModelLabel = new Label {
+            Text = this.selectedAsset.name,
+            VerticalAlignment = VerticalAlignment.Center,
+            Font = new Font("Helvetica", 10)
+        };
+        var changeModelButton = new Button{Text = "Change"};
+        changeModelButton.Click += (sender, e) => {
+            this.selectNewModel();
         };
 
         var latitudeLabel = new Label {
@@ -166,7 +329,7 @@ public class GDPDialog : Dialog<DialogResult> {
         StackLayout modelStackLayout = new StackLayout {
             Orientation = Orientation.Horizontal,
             Spacing = 10,
-            Items = { null, modelLabel, this.modelDropDown }
+            Items = { null, modelLabel, this.selectedModelLabel, changeModelButton }
         };
 
         StackLayout latitudeStackLayout = new StackLayout {
@@ -217,6 +380,23 @@ public class GDPDialog : Dialog<DialogResult> {
         };
     }
 
+    private void selectNewModel() {
+        string? key = AuthSession.Login();
+        if (!AuthSession.IsLoggedIn) return;
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthSession.CesiumAccessToken);
+        string json = Task.Run(() => client.GetStringAsync("https://api.cesium.com/v1/assets?type=3DTILES").Result).GetAwaiter().GetResult();
+        List<CesiumAsset> assets = CesiumAssets.FromJson(json);
+
+        CesiumImportDialog dialog = new CesiumImportDialog(assets);
+        CesiumAsset asset = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+
+        if (asset != null) {
+            this.selectedAsset = asset;
+            this.selectedModelLabel.Text = asset.name;
+        }
+    }
+
     public void prefillData(double latitude, double longitude, double altitude, double radius) {
         this.latitudeTextBox.Text = latitude.ToString();
         this.longitudeTextBox.Text = longitude.ToString();
@@ -226,7 +406,6 @@ public class GDPDialog : Dialog<DialogResult> {
 
     private DialogResult getUserInput() {
         string apiKey = AuthSession.CesiumAccessToken;
-        string modelName = this.modelDropDown.SelectedValue.ToString();
         string latitudeText = this.latitudeTextBox.Text;
         string longitudeText = this.longitudeTextBox.Text;
         string altitudeText = this.altitudeTextBox.Text;
@@ -285,7 +464,7 @@ public class GDPDialog : Dialog<DialogResult> {
         }
 
         RhinoApp.WriteLine("Fetch Successful! \n" +
-            "Model Name: " + modelName + "\n" +
+            "Model Name: " + this.selectedAsset.name + "\n" +
             "Latitude: " + latitude.ToString() + "\n" +
             "Longitude: " + longitude.ToString() + "\n" +
             "Altitude: " + altitude.ToString() + "\n" +
@@ -294,7 +473,7 @@ public class GDPDialog : Dialog<DialogResult> {
 
         return new DialogResult(
             apiKey,
-            modelName,
+            this.selectedAsset,
             latitude,
             longitude,
             altitude,

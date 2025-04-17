@@ -300,6 +300,9 @@ namespace LoadTiles
 
             if (valuesNotInitialised) {
                 string tok = result.apiKey;
+                int assetId = 2275207;
+                if (result.selectedAsset.id != null) assetId = (int) result.selectedAsset.id;
+                Console.WriteLine(assetId); // TODO: actually use this for something.
                 key = GetGMapsKeyFromCesium(tok);
                 (session, url) = GetGMapsSessionToken(key);
                 
