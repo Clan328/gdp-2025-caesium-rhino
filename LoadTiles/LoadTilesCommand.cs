@@ -18,7 +18,7 @@ namespace LoadTiles
     public class LoadTilesCommand : Command
     {
         private readonly HttpClient _cesiumClient, _gmapsClient;
-        public double latitude, longitude, altitude; // We store the last inputted values so that we can write them to file when saving.
+        public double latitude, longitude, altitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
         public bool locationInputted = false;
         private string key, session, url;  // For calls to the *Google Maps 3D Tiles* API, not Cesium
         private TemporaryGeometryConduit displayConduit;
@@ -312,14 +312,14 @@ namespace LoadTiles
             this.longitude = result.longitude;
             this.locationInputted = true;
             this.altitude = result.altitude;
-            double renderDistance = result.radius;  // Radius around target point to load.
+            this.renderDistance = result.radius;  // Radius around target point to load.
 
             // Used to display the objects we import, even though they don't "exist" in the traditional sense in the project.
             this.displayConduit = new TemporaryGeometryConduit();
 
             Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
             // Load tiles
-            IEnumerable<RhinoObject> objects = LoadTiles(doc, targetPoint, renderDistance);
+            IEnumerable<RhinoObject> objects = LoadTiles(doc, targetPoint, this.renderDistance);
             // Move tiles to origin
             TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude);
 

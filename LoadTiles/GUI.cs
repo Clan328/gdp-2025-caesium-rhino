@@ -11,11 +11,11 @@ namespace LoadTiles;
 public class DialogResult {
     public string apiKey;
     public string modelName;
-    public float latitude;
-    public float longitude;
-    public float altitude;
+    public double latitude;
+    public double longitude;
+    public double altitude;
     public double radius;
-    public DialogResult(string apiKey, string modelName, float latitude, float longitude, float altitude, double radius) {
+    public DialogResult(string apiKey, string modelName, double latitude, double longitude, double altitude, double radius) {
         this.apiKey = apiKey;
         this.modelName = modelName;
         this.latitude = latitude;
@@ -229,9 +229,9 @@ public class GDPDialog : Dialog<DialogResult> {
         string longitudeText = this.longitudeTextBox.Text;
         string altitudeText = this.altitudeTextBox.Text;
         string radiusText = this.radiusTextBox.Text;
-        bool canConvertLatitude = float.TryParse(latitudeText, out float latitude);
-        bool canConvertLongitude = float.TryParse(longitudeText, out float longitude);
-        bool canConvertAltitude = float.TryParse(altitudeText, out float altitude);
+        bool canConvertLatitude = double.TryParse(latitudeText, out double latitude);
+        bool canConvertLongitude = double.TryParse(longitudeText, out double longitude);
+        bool canConvertAltitude = double.TryParse(altitudeText, out double altitude);
         bool canConvertRadius = double.TryParse(radiusText, out double radius);
         bool latitudeValid = canConvertLatitude && latitude >= -90 && latitude <= 90;
         bool longitudeValid = canConvertLongitude && longitude >= -180 && longitude <= 180;
