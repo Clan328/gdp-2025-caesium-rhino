@@ -145,7 +145,7 @@ namespace LoadTiles
         /// <param name="targetPoint">Point to translate to origin</param>
         /// <param name="lat">Corresponding latitude of targetPoint</param>
         /// <param name="lon">Corresponding longitude of targetPoint</param>
-        private void TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon) {
+        private List<Guid> TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon) {
             double scaleFactor = RhinoMath.UnitScale(UnitSystem.Meters, RhinoDoc.ActiveDoc.ModelUnitSystem);
             
             // Calculate the three orthogonal vectors for rotation
@@ -164,10 +164,15 @@ namespace LoadTiles
             Transform rotate = Transform.Rotation(east, north, up, new Vector3d(1,0,0), new Vector3d(0,1,0), new Vector3d(0,0,1));
             Transform moveRot = rotate * toOrigin;
 
+            List<Guid> transformedObjects = new List<Guid>();
+
             // Applies the transformation to all loaded tiles
             foreach (RhinoObject obj in objects) {
-                doc.Objects.Transform(obj, moveRot, true);
+                Guid guid = doc.Objects.Transform(obj, moveRot, true);
+                transformedObjects.Add(guid);
             }
+
+            return transformedObjects;
         }
 
         /// <summary>
@@ -324,12 +329,13 @@ namespace LoadTiles
             // Load tiles
             List<RhinoObject> objects = LoadTiles(doc, existingObjects, targetPoint, this.renderDistance);
             // Move tiles to origin
-            TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude);
+            List<Guid> transformedObjects = TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude);
 
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
 
             // We've imported our objects. We now need to delete them from the active document and instead put them in the TemporaryGeometryConduit.
-            foreach (var obj in objects) {
+            foreach (var guid in transformedObjects) {
+                var obj = doc.Objects.FindId(guid);
                 this.displayConduit.addObject(obj);
                 doc.Objects.Delete(obj);
             }
