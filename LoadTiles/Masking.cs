@@ -14,7 +14,7 @@ public class MaskingCommand : Command {
 
     protected override Result RunCommand(RhinoDoc doc, RunMode mode) {
         var getObject = new GetObject();
-        getObject.SetCommandPrompt("Select the masking mesh");
+        getObject.SetCommandPrompt("Select the masking object");
         getObject.GeometryFilter = ObjectType.Brep;
         getObject.SubObjectSelect = false;
         getObject.DeselectAllBeforePostSelect = true;
