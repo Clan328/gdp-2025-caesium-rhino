@@ -281,7 +281,7 @@ namespace LoadTiles
 
             GDPDialog dialog = new();
             if (this.locationInputted) {
-                dialog.prefillData(this.latitude, this.longitude);
+                dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance);
             }
             DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow); 
 

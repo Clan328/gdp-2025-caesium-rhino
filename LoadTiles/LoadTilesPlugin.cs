@@ -54,12 +54,16 @@ namespace LoadTiles
                 return;
             }
 
-            double[] locationValues = new double[] {loadTilesCommand.latitude, loadTilesCommand.longitude, loadTilesCommand.altitude};
+            Rhino.Collections.ArchivableDictionary userDataDictionary = new();
+            userDataDictionary.Set("latitude", loadTilesCommand.latitude);
+            userDataDictionary.Set("longitude", loadTilesCommand.longitude);
+            userDataDictionary.Set("altitude", loadTilesCommand.altitude);
+            userDataDictionary.Set("radius", loadTilesCommand.renderDistance);
             
             // Write the version of our document data
             archive.Write3dmChunkVersion(MAJOR, MINOR);
             // Write our actual user data
-            archive.WriteDoubleArray(locationValues);
+            archive.WriteDictionary(userDataDictionary);
         }
 
         /// <summary>
@@ -69,10 +73,11 @@ namespace LoadTiles
         protected override void ReadDocument(RhinoDoc doc, Rhino.FileIO.BinaryArchiveReader archiveReader, Rhino.FileIO.FileReadOptions options) {
             archiveReader.Read3dmChunkVersion(out int major, out int minor);
             if (MAJOR == major && MINOR == minor) {
-                double[] locationValues = archiveReader.ReadDoubleArray();
-                double latitude = locationValues[0];
-                double longitude = locationValues[1];
-                double altitude = locationValues[2];
+                Rhino.Collections.ArchivableDictionary userDataDictionary = archiveReader.ReadDictionary();
+                double latitude = userDataDictionary.GetDouble("latitude");
+                double longitude = userDataDictionary.GetDouble("longitude");
+                double altitude = userDataDictionary.GetDouble("altitude");
+                double radius = userDataDictionary.GetDouble("radius");
 
                 Rhino.Commands.Command[] commands = GetCommands();
                 LoadTilesCommand loadTilesCommand = null;
@@ -90,6 +95,7 @@ namespace LoadTiles
                 loadTilesCommand.latitude = latitude;
                 loadTilesCommand.longitude = longitude;
                 loadTilesCommand.altitude = altitude;
+                loadTilesCommand.renderDistance = radius;
                 loadTilesCommand.locationInputted = true;
             }
         }

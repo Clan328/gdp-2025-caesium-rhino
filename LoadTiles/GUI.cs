@@ -217,9 +217,11 @@ public class GDPDialog : Dialog<DialogResult> {
         };
     }
 
-    public void prefillData(double latitude, double longitude) {
+    public void prefillData(double latitude, double longitude, double altitude, double radius) {
         this.latitudeTextBox.Text = latitude.ToString();
         this.longitudeTextBox.Text = longitude.ToString();
+        this.altitudeTextBox.Text = altitude.ToString();
+        this.radiusTextBox.Text = radius.ToString();
     }
 
     private DialogResult getUserInput() {
