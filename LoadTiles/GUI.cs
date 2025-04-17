@@ -220,7 +220,7 @@ public class GDPDialog : Dialog<DialogResult> {
         };
         this.apiKeyTextBox = new TextBox{Width = 200};
 
-        this.selectedAsset = this.getDefaultSelectedAsset(); // TODO: save this information with the other .3dm data
+        this.selectedAsset = this.getDefaultSelectedAsset();
 
         var modelLabel = new Label {
             Text = "Model:",
