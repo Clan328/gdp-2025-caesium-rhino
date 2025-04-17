@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace LoadTiles;
 
 public class TemporaryGeometryConduit : DisplayConduit {
-    private List<RhinoObject> importedObjects;
+    public List<RhinoObject> importedObjects;
 
     public TemporaryGeometryConduit() {
         this.importedObjects = new List<RhinoObject>();

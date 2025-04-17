@@ -21,7 +21,7 @@ namespace LoadTiles
         public double latitude, longitude, altitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
         public bool locationInputted = false;
         private string key, session, url;  // For calls to the *Google Maps 3D Tiles* API, not Cesium
-        private TemporaryGeometryConduit displayConduit;
+        public TemporaryGeometryConduit displayConduit;
         public LoadTilesCommand()
         {
             // Initialise Http Clients
