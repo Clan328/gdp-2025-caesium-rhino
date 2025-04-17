@@ -178,7 +178,7 @@ namespace LoadTiles
         /// <param name="renderDistance">Radius (metres) around the point to load. Formally this loads all tiles 
         /// whose bounding box's closest edge to the point is within this distance.</param>
         /// <returns>List of Rhino objects that were loaded</returns>
-        private IEnumerable<RhinoObject> LoadTiles(RhinoDoc doc, Point3d targetPoint, double renderDistance) {
+        private List<RhinoObject> LoadTiles(RhinoDoc doc, List<Guid> existingObjects, Point3d targetPoint, double renderDistance) {
             RhinoApp.WriteLine("Loading tiles...");
 
             // Call the API to get the root tile
@@ -187,14 +187,17 @@ namespace LoadTiles
             Tileset tileset = Tileset.Deserialize(response, new Uri(url, UriKind.Absolute), Transform.Identity);
             Tile tile = tileset.Root;
 
-            var before = doc.Objects.GetObjectList(ObjectType.AnyObject);
-
             // Recursively load tiles from API
             TraverseTileTree(doc, tile, targetPoint, renderDistance);
 
             // Finds all objects imported from 3d tile
-            var after = doc.Objects.GetObjectList(ObjectType.AnyObject);
-            return after.Except(before);
+            var newObjects = new List<RhinoObject>();
+            foreach (var obj in doc.Objects) {
+                if (!existingObjects.Contains(obj.Id)) {
+                    newObjects.Add(obj);
+                }
+            }
+            return newObjects;
         }
 
         /// <summary>
@@ -319,18 +322,16 @@ namespace LoadTiles
 
             Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
             // Load tiles
-            IEnumerable<RhinoObject> objects = LoadTiles(doc, targetPoint, this.renderDistance);
+            List<RhinoObject> objects = LoadTiles(doc, existingObjects, targetPoint, this.renderDistance);
             // Move tiles to origin
             TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude);
 
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
 
             // We've imported our objects. We now need to delete them from the active document and instead put them in the TemporaryGeometryConduit.
-            foreach (var obj in doc.Objects) {
-                if (!existingObjects.Contains(obj.Id)) {
-                    this.displayConduit.addObject(obj);
-                    doc.Objects.Delete(obj);
-                }
+            foreach (var obj in objects) {
+                this.displayConduit.addObject(obj);
+                doc.Objects.Delete(obj);
             }
 
             // Clean up after ourselves. This stops really large file sizes when saving afterwards.
