@@ -341,6 +341,7 @@ namespace LoadTiles
             // We've imported our objects. We now need to delete them from the active document and instead put them in the TemporaryGeometryConduit.
             foreach (var guid in transformedObjects) {
                 var obj = doc.Objects.FindId(guid);
+                if (obj == null) continue;
                 this.displayConduit.addObject(obj);
                 doc.Objects.Delete(obj);
             }
