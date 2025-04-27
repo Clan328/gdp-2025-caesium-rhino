@@ -172,7 +172,6 @@ public class DialogResult {
 }
 
 public class GDPDialog : Dialog<DialogResult> {
-    private TextBox apiKeyTextBox;
     private TextBox latitudeTextBox;
     private TextBox longitudeTextBox;
     private TextBox altitudeTextBox;
@@ -191,99 +190,66 @@ public class GDPDialog : Dialog<DialogResult> {
         );
     }
 
+    private Color colourVeryLight = Color.FromRgb(0xC9F2C7);
+    private Color colourLighter = Color.FromRgb(0xACECA1);
+    private Color colourLight = Color.FromRgb(0x96BE8C);
+    private Color colourDark = Color.FromRgb(0x629460);
+    private Color colourDarker = Color.FromRgb(0x243119);
+
     public GDPDialog() {
-        Title = "GDP Plugin Window";
-        ClientSize = new Size(600, 400);
-        Resizable = true; // TODO: maybe remove?
+        Title = "Fetch real world data";
+        ClientSize = new Size(400, 550);
+
+        var headerPanel = new Panel {
+            BackgroundColor = colourLight,
+            Padding = 20,
+            Width = 100000 // Surely there is a better way of doing this.
+        };
 
         var titleLabel = new Label {
-            Text = "GDP Plugin",
-            VerticalAlignment = VerticalAlignment.Center,
+            Text = "Fetch data",
             Font = new Font("Helvetica", 18, FontStyle.Bold)
         };
 
         var subtitleLabel = new Label {
-            Text = "Enter all of the data in this window",
-            VerticalAlignment = VerticalAlignment.Center,
+            Text = "What data do you want to import?",
             Font = new Font("Helvetica", 10)
         };
 
-        var subtitleLabelPanel = new Panel {
-            Padding = new Padding(0, 0, 0, 10),
-            Content = subtitleLabel
+        headerPanel.Content = new StackLayout {
+            Orientation = Orientation.Vertical,
+            Items = {
+                titleLabel,
+                subtitleLabel
+            }
         };
 
-        var apiKeyLabel = new Label {
-            Text = "API key:",
-            VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10)
-        };
-        this.apiKeyTextBox = new TextBox{Width = 200};
-
-        this.selectedAsset = this.getDefaultSelectedAsset();
-
-        var modelLabel = new Label {
-            Text = "Model:",
-            VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10)
-        };
-        this.selectedModelLabel = new Label {
-            Text = this.selectedAsset.name,
-            VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10, FontStyle.Bold)
-        };
-        var changeModelButton = new Button{Text = "Change"};
-        changeModelButton.Click += (sender, e) => {
-            this.selectNewModel();
+        var authLabel = new Label {
+            Text = "Authentication",
+            Font = new Font("Helvetica", 12)
         };
 
-        var latitudeLabel = new Label {
-            Text = "Latitude:",
-            VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10)
-        };
-        this.latitudeTextBox = new TextBox();
-        var longitudeLabel = new Label {
-            Text = "Longitude:",
-            VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10)
-        };
-        this.longitudeTextBox = new TextBox();
+        string loggedInText = "You are logged in.";
+        string loggedOutText = "You are logged out.";
 
-        var altitudeLabel = new Label {
-            Text = "Altitude (what are the units? I'm guessing metres?):",
-            VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10)
-        };
-        this.altitudeTextBox = new TextBox();
-        this.altitudeTextBox.Text = "0";
-
-        var radiusLabel = new Label {
-            Text = "Radius (what are the units? I'm guessing metres?)",
-            VerticalAlignment = VerticalAlignment.Center,
-            Font = new Font("Helvetica", 10)
-        };
-        this.radiusTextBox = new TextBox();
-        this.radiusTextBox.Text = "200";
-
-        // All Auth stuff :
-        // Display for 'Logged In' / 'Logged Out' status
         var loggedInLabel = new Label {
-            Text = (AuthSession.IsLoggedIn ? "Logged in with key: " + AuthSession.CesiumAccessToken : "You are not logged in."),
-            VerticalAlignment = VerticalAlignment.Center,
+            Text = AuthSession.IsLoggedIn ? loggedInText : loggedOutText,
             Font = new Font("Helvetica", 10)
         };
+        var loggedInLabelPanel = new Panel {
+            Padding = new Padding(0, 0, 30, 0),
+            Content = loggedInLabel
+        };
 
-        // Button authButton = new Button{Text = "Click here to do auth"};
-        this.authButton = new Button{Text = (AuthSession.IsLoggedIn ? "Log Out" : "Log In")};
+        this.authButton = new Button{Text = AuthSession.IsLoggedIn ? "Log out" : "Log in"};
         this.authButton.Click += (sender, e) => {
             if (AuthSession.IsLoggedIn)
             {
                 // Log out the user
                 AuthSession.Logout();
                 MessageBox.Show("Logging out...");
-                authButton.Text = "Log In";
-                loggedInLabel.Text = "You are not logged in.";
+                authButton.Text = "Log in";
+                loggedInLabel.Text = loggedOutText;
                 return;
             }
 
@@ -292,8 +258,8 @@ public class GDPDialog : Dialog<DialogResult> {
             if (AuthSession.IsLoggedIn)
             {
                 MessageBox.Show("Authentication successful!");
-                authButton.Text = "Log Out";
-                loggedInLabel.Text = "Logged in with key: " + key;
+                authButton.Text = "Log out";
+                loggedInLabel.Text = loggedInText;
             }
             else
             {
@@ -301,83 +267,202 @@ public class GDPDialog : Dialog<DialogResult> {
             }
         };
 
+        var loggedInStatusDynamicLayout = new DynamicLayout {
+            Padding = new Padding(0, 15, 0, 0)
+        };
+        loggedInStatusDynamicLayout.BeginHorizontal();
+        loggedInStatusDynamicLayout.Add(loggedInLabelPanel);
+        loggedInStatusDynamicLayout.Add(null, true);
+        loggedInStatusDynamicLayout.Add(this.authButton);
+        loggedInStatusDynamicLayout.EndHorizontal();
+        
+        var authDynamicLayoutInner = new DynamicLayout {
+            BackgroundColor = colourDark,
+            Padding = 10
+        };
+        authDynamicLayoutInner.BeginVertical();
+        authDynamicLayoutInner.Add(authLabel);
+        authDynamicLayoutInner.Add(loggedInStatusDynamicLayout);
+        authDynamicLayoutInner.EndVertical();
+        var authDynamicLayout = new DynamicLayout {
+            Padding = new Padding(20, 20, 20, 0)
+        };
+        authDynamicLayout.BeginHorizontal();
+        authDynamicLayout.Add(authDynamicLayoutInner);
+        authDynamicLayout.EndHorizontal();
 
-        DefaultButton = new Button{Text = "Submit"};
+        this.selectedAsset = this.getDefaultSelectedAsset();
+
+        var modelLabel = new Label {
+            Text = "Model",
+            Font = new Font("Helvetica", 12)
+        };
+
+        this.selectedModelLabel = new Label {
+            Text = this.selectedAsset.name,
+            Font = new Font("Helvetica", 10, FontStyle.Bold)
+        };
+        var selectedModelLabelPanel = new Panel {
+            Padding = new Padding(0, 0, 20, 0),
+            Content = this.selectedModelLabel
+        };
+
+        var changeModelButton = new Button{Text = "Change"};
+        changeModelButton.Click += (sender, e) => {
+            this.selectNewModel();
+        };
+
+        var currentModelDynamicLayout = new DynamicLayout {
+            Padding = new Padding(0, 15, 0, 0)
+        };
+        currentModelDynamicLayout.BeginHorizontal();
+        currentModelDynamicLayout.Add(selectedModelLabelPanel);
+        currentModelDynamicLayout.Add(null, true);
+        currentModelDynamicLayout.Add(changeModelButton);
+        currentModelDynamicLayout.EndHorizontal();
+
+        var modelDynamicLayoutInner = new DynamicLayout {
+            BackgroundColor = colourDark,
+            Padding = 10
+        };
+        modelDynamicLayoutInner.BeginVertical();
+        modelDynamicLayoutInner.Add(modelLabel);
+        modelDynamicLayoutInner.Add(currentModelDynamicLayout);
+        modelDynamicLayoutInner.EndVertical();
+        var modelDynamicLayout = new DynamicLayout {
+            Padding = new Padding(20, 20, 20, 0)
+        };
+        modelDynamicLayout.BeginHorizontal();
+        modelDynamicLayout.Add(modelDynamicLayoutInner);
+        modelDynamicLayout.EndHorizontal();
+
+        var positionLabel = new Label {
+            Text = "Position",
+            Font = new Font("Helvetica", 12)
+        };
+
+        var latitudeLabel = new Label {
+            Text = "Latitude",
+            Font = new Font("Helvetica", 10)
+        };
+        this.latitudeTextBox = new TextBox();
+        var latitudeStackLayout = new StackLayout {
+            Orientation = Orientation.Vertical,
+            Items = { latitudeLabel, this.latitudeTextBox }
+        };
+
+        var longitudeLabel = new Label {
+            Text = "Longitude",
+            Font = new Font("Helvetica", 10)
+        };
+        this.longitudeTextBox = new TextBox();
+        var longitudeStackLayout = new StackLayout {
+            Orientation = Orientation.Vertical,
+            Items = { longitudeLabel, this.longitudeTextBox }
+        };
+
+        var altitudeLabel = new Label {
+            Text = "Altitude",
+            Font = new Font("Helvetica", 10)
+        };
+        this.altitudeTextBox = new TextBox();
+        this.altitudeTextBox.Text = "0";
+        var altitudeTextBoxLabel = new Label {
+            Text = "  metres",
+            Font = new Font("Helvetica", 9)
+        };
+        var altitudeTextBoxStackLayout = new StackLayout {
+            Orientation = Orientation.Horizontal,
+            Items = { this.altitudeTextBox, new StackLayoutItem(altitudeTextBoxLabel, VerticalAlignment.Center) }
+        };
+        var altitudeStackLayout = new StackLayout {
+            Orientation = Orientation.Vertical,
+            Items = { altitudeLabel, altitudeTextBoxStackLayout }
+        };
+
+        var radiusLabel = new Label {
+            Text = "Radius",
+            Font = new Font("Helvetica", 10)
+        };
+        this.radiusTextBox = new TextBox();
+        this.radiusTextBox.Text = "200";
+        var radiusTextBoxLabel = new Label {
+            Text = "  metres",
+            Font = new Font("Helvetica", 9)
+        };
+        var radiusTextBoxStackLayout = new StackLayout {
+            Orientation = Orientation.Horizontal,
+            Items = { this.radiusTextBox, new StackLayoutItem(radiusTextBoxLabel, VerticalAlignment.Center) }
+        };
+        var radiusStackLayout = new StackLayout {
+            Orientation = Orientation.Vertical,
+            Items = { radiusLabel, radiusTextBoxStackLayout }
+        };
+
+        TableLayout positionTableLayout = new TableLayout {
+            Spacing = new Size(20, 20),
+            Padding = new Padding(0, 20, 0, 0),
+            Rows = {
+                new TableRow(latitudeStackLayout, longitudeStackLayout),
+                new TableRow(altitudeStackLayout, radiusStackLayout)
+            }
+        };
+
+        StackLayout positionStackLayoutInner = new StackLayout {
+            Orientation = Orientation.Vertical,
+            BackgroundColor = colourDark,
+            Padding = 10,
+            Items = { positionLabel, positionTableLayout }
+        };
+        var positionDynamicLayout = new DynamicLayout {
+            Padding = new Padding(20, 20, 20, 0)
+        };
+        positionDynamicLayout.BeginHorizontal();
+        positionDynamicLayout.Add(positionStackLayoutInner);
+        positionDynamicLayout.EndHorizontal();
+
+        DefaultButton = new Button{Text = "Import"};
         DefaultButton.Click += (sender, e) => {
             DialogResult result = this.getUserInput();
             if (result == null) return;
             Close(result);
         };
+        var defaultButtonPanel = new Panel {
+            Padding = new Padding(0, 0, 20, 0),
+            Content = DefaultButton
+        };
 
         AbortButton = new Button{Text = "Cancel"};
         AbortButton.Click += (sender, e) => Close(null);
 
-        TableLayout apiKeyTableLayout = new TableLayout {
+        StackLayout buttonsStackLayoutInner = new StackLayout {
+            Orientation = Orientation.Horizontal,
+            BackgroundColor = colourLight,
             Padding = 10,
-            Spacing = new Size(10, 10),
-            Rows = {
-                new TableRow(new TableCell(apiKeyLabel, false), new TableCell(apiKeyTextBox, true))
-            }
+            Items = { defaultButtonPanel, AbortButton }
         };
-        
-        StackLayout authStackLayout = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Spacing = 5,
-            Items = { null, loggedInLabel, this.authButton }
+        var buttonsDynamicLayout = new DynamicLayout {
+            Padding = new Padding(20, 30, 20, 0)
         };
+        buttonsDynamicLayout.BeginHorizontal();
+        buttonsDynamicLayout.Add(null, true);
+        buttonsDynamicLayout.Add(buttonsStackLayoutInner);
+        buttonsDynamicLayout.Add(null, true);
+        buttonsDynamicLayout.EndHorizontal();
 
-        StackLayout modelStackLayout = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Spacing = 10,
-            Items = { null, modelLabel, this.selectedModelLabel, changeModelButton }
+        var dynamicLayout = new DynamicLayout {
+            BackgroundColor = colourDarker
         };
+        dynamicLayout.BeginVertical();
+        dynamicLayout.Add(headerPanel, true);
+        dynamicLayout.Add(authDynamicLayout, true);
+        dynamicLayout.Add(modelDynamicLayout, true);
+        dynamicLayout.Add(positionDynamicLayout, true);
+        dynamicLayout.Add(buttonsDynamicLayout, true);
+        dynamicLayout.Add(null, true);
+        dynamicLayout.EndVertical();
 
-        StackLayout latitudeStackLayout = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Spacing = 10,
-            Items = { null, latitudeLabel, this.latitudeTextBox }
-        };
-
-        StackLayout longitudeStackLayout = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Spacing = 10,
-            Items = { null, longitudeLabel, this.longitudeTextBox }
-        };
-
-        StackLayout altitudeStackLayout = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Spacing = 10,
-            Items = { null, altitudeLabel, this.altitudeTextBox }
-        };
-
-        StackLayout radiusStackLayout = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Spacing = 10,
-            Items = { null, radiusLabel, this.radiusTextBox }
-        };
-
-        StackLayout buttons = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Spacing = 5,
-            Items = { null, DefaultButton, AbortButton }
-        };
-
-        Content = new StackLayout {
-            Padding = 30,
-            Spacing = 10,
-            Items = {
-                titleLabel,
-                subtitleLabelPanel,
-                authStackLayout,
-                modelStackLayout,
-                latitudeStackLayout,
-                longitudeStackLayout,
-                altitudeStackLayout,
-                radiusStackLayout,
-                new StackLayoutItem(null, expand: true),
-                buttons
-            }
-        };
+        Content = dynamicLayout;
     }
 
     private void selectNewModel() {
