@@ -84,6 +84,15 @@ public class MaskingCommand : Command {
             foreach (var brep in newBreps){
                 Guid id = doc.Objects.AddBrep(brep);
                 RhinoObject obj = doc.Objects.FindId(id);
+
+                // Set the object's material to a solid colour
+                var attributes = obj.Attributes.Duplicate();
+                attributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
+                var material = new Rhino.DocObjects.Material{ DiffuseColor = System.Drawing.Color.Gray };
+                int materialIndex = doc.Materials.Add(material);
+                attributes.MaterialIndex = materialIndex;
+                doc.Objects.ModifyAttributes(obj, attributes, true);
+
                 loadTilesCommand.displayConduit.addObject(obj);
                 doc.Objects.Delete(obj);
             }
