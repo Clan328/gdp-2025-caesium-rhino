@@ -4,9 +4,9 @@ It should open an instance of Rhino with the plugin loaded.
 
 In Rhino's command line (which should be positioned near the top of the window), type "Fetch". If the plugin was loaded correctly it should start autocompleting this function name as you type it.
 
-~~If the GUI doesn't open when running "Fetch", try running "MyCommand" and then cancelling before running "Fetch" again.~~ **This issue should now be fixed.**
+You will need a Cesium Ion access token, which you can configure [here](https://ion.cesium.com/tokens).
 
-When prompted, enter your Cesium Ion access token - which you can configure [here](https://ion.cesium.com/tokens), and also enter the longitude and latitude of where you want to load. Currently the option entered for model do not affect the source for the tiles.
+When prompted, enter the longitude and latitude of where you want to load. Currently the option entered for model does not affect the source for the tiles.
 
 For convenience, you should create a `.env` file in this root directory storing your API query parameters for Google Maps' API. More details in the comment in the `RunCommand` method in `LoadTiles/LoadTilesCommand.cs`.
 
