@@ -25,20 +25,19 @@ public class Styling {
     public static Panel createHeaderPanel(string title, string subtitle) {
         var headerPanel = new Panel {
             BackgroundColor = colourLight,
-            Padding = 20,
-            Width = 100000 // Surely there is a better way of doing this.
+            Padding = 20
         };
 
         var titleLabel = label(title, 18, true);
         var subtitleLabel = label(subtitle, 10);
 
-        headerPanel.Content = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Items = {
-                titleLabel,
-                subtitleLabel
-            }
-        };
+        var dynamicLayout = new DynamicLayout();
+        dynamicLayout.BeginVertical();
+        dynamicLayout.Add(titleLabel);
+        dynamicLayout.Add(subtitleLabel);
+        dynamicLayout.EndVertical();
+
+        headerPanel.Content = dynamicLayout;
 
         return headerPanel;
     }
