@@ -1,0 +1,207 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using Rhino;
+using Rhino.DocObjects;
+using Rhino.Geometry;
+using TilesData;
+
+namespace LoadTiles
+{
+    public abstract class TileLoader
+    {
+        // For Cesium Ion 
+        private readonly HttpClient cesiumIonClient = new HttpClient { 
+            BaseAddress = new Uri("https://api.cesium.com") 
+        };
+        
+        // For the chosen 3D Tiles API
+        protected readonly HttpClient client;
+        protected abstract string RootUrl { get; }
+        protected abstract string AssetId { get; }
+
+        /// <summary>
+        /// Initialises the API parameters (URL to root, API key, session token etc.) for the 3D Tiles API.
+        /// </summary>
+        protected abstract void InitApiParameters(string cesiumIonApiKey);
+
+        protected TileLoader(string clientBaseUrl)
+        {
+            // Initialise 3D Tiles API client with the base URL
+            client = new HttpClient { 
+                BaseAddress = new Uri(clientBaseUrl) 
+            };
+        }
+
+        /// <summary>
+        /// Makes an API call to retrieve a GLB file
+        /// </summary>
+        /// <param name="client">Http client to make the API call</param>
+        /// <param name="url">Link to the API</param>
+        /// <returns>Byte array representing the GLB file</returns>
+        protected byte[] FetchGLBFromAPI(HttpClient client, string url) 
+        {
+            return client.GetByteArrayAsync(url).Result;
+        }
+
+        /// <summary>
+        /// Makes an API call to retrieve a string
+        /// </summary>
+        /// <param name="client">Http client to make the API call</param>
+        /// <param name="url">Link to the API</param>
+        /// <returns>Response from the API as a string</returns>
+        protected string FetchStringFromAPI(HttpClient client, string url) 
+        {
+            return client.GetStringAsync(url).Result;
+        }
+
+        /// <summary>
+        /// Makes an API call to Cesium Ion to get the endpoint for a specific asset
+        /// </summary>
+        protected JsonDocument CallIonEndpoint(string apiKey) 
+        {
+            // Set the authorization header with the token
+            cesiumIonClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            
+            // Make the API call to get the endpoint
+            string url = $"/v1/assets/{AssetId}/endpoint";
+            string response = FetchStringFromAPI(cesiumIonClient, url);
+            
+            // Parse the response to JSON format
+            return JsonDocument.Parse(response);
+        }
+
+        /// <summary>
+        /// Forms the URL for any API call to the 3D Tiles API.
+        /// <br/>
+        /// Some APIs (e.g. Google Maps) append the key and session ID to the URL.
+        /// </summary>
+        protected virtual string FormUrl(string url) 
+        {
+            return url;
+        }
+
+        /// <summary>
+        /// Loads and imports the GLB associated with the given tile.
+        /// </summary>
+        /// <param name="doc">Active document</param>
+        /// <param name="tile">Tile to load</param>
+        /// <returns>Whether the import was successful.</returns>
+        private bool LoadGLB(RhinoDoc doc, Tile tile, Point3d targetPoint) 
+        {
+            string glbLink = tile.Contents[0].Uri.ToString();
+            // Check that the link is indeed a GLB
+            string[] linkparts = glbLink.Split('.');
+            if (linkparts[linkparts.Length - 1] != "glb") return false;
+            // Load the GLB file from the API
+            byte[] glbBytes = FetchGLBFromAPI(client, FormUrl(glbLink));
+            // Store the GLB file in a temporary location
+            // This is necessary because the Rhino GLTF reader does not support loading from a byte array
+            string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
+            File.WriteAllBytes(tempPath, glbBytes);
+            Console.WriteLine(Helper.PointDistanceToBoundingVolume(targetPoint, tile.BoundingVolume));
+            // Read GLB from the temporary file and import it into the Rhino document
+            return doc.Import(tempPath);
+        }
+
+        /// <summary>
+        /// Check if the tile is sufficiently detailed.
+        /// This determines whether the tile should be loaded, or if it should be refined instead.
+        /// <br/>
+        /// This is currently based on the distance between the tile and the target point, and the geometric error of the tile.
+        /// <br/>
+        /// TODO: Make this based on SSE (Screen Space Error) instead, which requires distance between tile and camera
+        /// </summary>
+        /// <param name="tile">Tile to check</param>
+        /// <param name="targetPoint">Point3d object to check distance to</param>
+        /// <returns>Whether the tile should be rendered instead of refined.</returns>
+        private static bool IsSufficientlyDetailed(Tile tile, Point3d targetPoint) 
+        {
+            double distance = Helper.PointDistanceToTile(targetPoint, tile);
+            double geometricError = tile.GeometricError;
+            double threshold = Math.Min(20, distance*0.02);  // TODO: Refine this, or make this a user-specified value?
+            return geometricError < threshold;
+        }
+
+        /// <summary>
+        /// Recursively traverses the tile tree using DFS, loading tiles as necessary.
+        /// </summary>
+        /// <param name="doc">Active document</param>
+        /// <param name="tile">Tile to load and/or refine</param>
+        private void TraverseTileTree(RhinoDoc doc, Tile tile, Point3d targetPoint, double renderDistance) 
+        {
+            bool tileHasContent = tile.Contents.Count > 0;
+
+            List<Tile> childrenWithinRenderDistance = tile.Children.FindAll(child => Helper.PointDistanceToTile(targetPoint, child) <= renderDistance);
+            bool hasChildrenWithinDistance = childrenWithinRenderDistance.Count > 0;
+
+            bool isSufficientlyDetailed = IsSufficientlyDetailed(tile, targetPoint);
+
+            // Should the tile itself be loaded?
+            bool shouldLoadTile = tileHasContent
+                && (isSufficientlyDetailed || tile.Refine == Refine.ADD || !hasChildrenWithinDistance);
+
+            // Should the objects of the tile be loaded, if it exists? This weeds out tiles that are too far away,
+            //   by checking if the tile itself is 'close' to the point but none of its children are
+            bool shouldLoadObjects = shouldLoadTile
+                && !(tile.Children.Count > 0 && !hasChildrenWithinDistance);
+
+            // Should the tile be traversed further?
+            bool shouldTraverse = hasChildrenWithinDistance && !isSufficientlyDetailed;
+
+            if (shouldLoadTile) {
+                string link = tile.Contents[0].Uri.ToString();
+                string[] linkparts = link.Split('.');
+                if (linkparts[linkparts.Length - 1] == "glb") {  // Content of this tile is a GLB file
+                    if (shouldLoadObjects) LoadGLB(doc, tile, targetPoint);
+                }
+                else {   // Content of this tile is a JSON link (make a further API call)
+                    string response = FetchStringFromAPI(client, FormUrl(link));
+                    Tile nextTile = Tileset.Deserialize(response, new Uri(link, UriKind.Absolute), Transform.Identity).Root;  // TODO: Change transform
+                    TraverseTileTree(doc, nextTile, targetPoint, renderDistance);
+                }
+            }
+            if (shouldTraverse) {
+                foreach (Tile childTile in childrenWithinRenderDistance) {
+                    TraverseTileTree(doc, childTile, targetPoint, renderDistance);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Loads tiles from the 3D tile API, in a radius around the specified location.
+        /// </summary>
+        /// <param name="doc">Active document</param>
+        /// <param name="existingObjects">List of existing objects in the document</param>
+        /// <param name="targetPoint">Point3d object corresponding to specified location</param>
+        /// <param name="renderDistance">Radius (metres) around the point to load. Formally this loads all tiles 
+        /// whose bounding box's closest edge to the point is within this distance.</param>
+        /// <param name="cesiumIonApiKey">API key for Cesium Ion</param>
+        /// <returns>List of Rhino objects that were loaded</returns>
+        public List<RhinoObject> LoadTiles(RhinoDoc doc, List<Guid> existingObjects, Point3d targetPoint, double renderDistance, string cesiumIonApiKey) 
+        {
+            RhinoApp.WriteLine("Loading tiles...");
+
+            // Call the API to get the root tile
+            InitApiParameters(cesiumIonApiKey);
+            string response = FetchStringFromAPI(client, FormUrl(RootUrl));
+            Tileset tileset = Tileset.Deserialize(response, new Uri(RootUrl, UriKind.Absolute), Transform.Identity);
+            Tile tile = tileset.Root;
+
+            // Recursively load tiles from API
+            TraverseTileTree(doc, tile, targetPoint, renderDistance);
+
+            // Finds all imported objects
+            List<RhinoObject> newObjects = new();
+            foreach (RhinoObject obj in doc.Objects) {
+                if (!existingObjects.Contains(obj.Id)) {
+                    newObjects.Add(obj);
+                }
+            }
+            return newObjects;
+        }
+    }
+}
