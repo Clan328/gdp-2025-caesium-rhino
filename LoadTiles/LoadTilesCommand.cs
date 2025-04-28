@@ -8,7 +8,6 @@ using System;
 using System.IO;
 using TilesData;
 using Rhino.Geometry;
-using System.Linq;
 using System.Collections.Generic;
 using Rhino.DocObjects;
 
@@ -32,12 +31,6 @@ namespace LoadTiles
             _gmapsClient = new HttpClient(){
                 BaseAddress = new Uri("https://tile.googleapis.com"),
             };
-
-            // Initialise Google Maps 3D Tiles API parameters
-            DotNetEnv.Env.TraversePath().Load();
-            key = DotNetEnv.Env.GetString("GMAPS_KEY");
-            session = DotNetEnv.Env.GetString("GMAPS_SESSION");
-            url = DotNetEnv.Env.GetString("GMAPS_URL");
         }
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
@@ -277,17 +270,6 @@ namespace LoadTiles
         {
             RhinoApp.WriteLine("Fetching...");
 
-            /* FOR DEVELOPMENT PURPOSES
-             * In order to save on API calls since Cesium Ion has a usage limit,
-             * it is recommended that you copy the console output of the key, session and url
-             * from the code block below, then save these values for your own subsequent API calls.
-             * To do so, create a .env file in the repo directory, and fill in the values in this format:
-             * GMAPS_KEY="something"
-             * GMAPS_SESSION="something"
-             * GMAPS_URL="something"
-             */
-            bool valuesNotInitialised = key == null || session == null || url == null;
-
             bool maskingDataLoadedFromFile = hasMaskingDataBeenFound();
 
             GDPDialog dialog = new GDPDialog(maskingDataLoadedFromFile);
@@ -301,19 +283,18 @@ namespace LoadTiles
                 return Result.Cancel;
             }
 
-            if (valuesNotInitialised) {
-                string tok = result.apiKey;
-                this.selectedAsset = result.selectedAsset;
-                int assetId = 2275207;
-                if (this.selectedAsset.id != null) assetId = (int) this.selectedAsset.id;
-                Console.WriteLine(assetId); // TODO: actually use this for something.
-                key = GetGMapsKeyFromCesium(tok);
-                (session, url) = GetGMapsSessionToken(key);
-                
-                Console.WriteLine(key);
-                Console.WriteLine(session);
-                Console.WriteLine(url);
-            }
+            // Process the inputs from the dialog window
+            string tok = result.apiKey;
+            this.selectedAsset = result.selectedAsset;
+            int assetId = 2275207;
+            if (this.selectedAsset.id != null) assetId = (int) this.selectedAsset.id;
+            Console.WriteLine(assetId); // TODO: actually use this for something.
+            key = GetGMapsKeyFromCesium(tok);
+            (session, url) = GetGMapsSessionToken(key);
+            
+            Console.WriteLine(key);
+            Console.WriteLine(session);
+            Console.WriteLine(url);
 
             // Keep track of which objects already exist in the project.
             // This is so that, once we've imported the objects from Google Maps/whatever else, we can delete only these new ones.
