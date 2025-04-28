@@ -200,6 +200,30 @@ public class GDPDialog : Dialog<DialogResult> {
         Title = "Fetch real world data";
         ClientSize = new Size(400, 550);
 
+        this.selectedAsset = this.getDefaultSelectedAsset();
+
+        var headerPanel = createHeaderPanel();
+        var authDynamicLayout = createAuthenticationPanel();
+        var modelDynamicLayout = createModelPanel();
+        var positionDynamicLayout = createPositionPanel();
+        var buttonsDynamicLayout = createButtonsPanel();
+
+        var dynamicLayout = new DynamicLayout {
+            BackgroundColor = colourDarker
+        };
+        dynamicLayout.BeginVertical();
+        dynamicLayout.Add(headerPanel, true);
+        dynamicLayout.Add(authDynamicLayout, true);
+        dynamicLayout.Add(modelDynamicLayout, true);
+        dynamicLayout.Add(positionDynamicLayout, true);
+        dynamicLayout.Add(buttonsDynamicLayout, true);
+        dynamicLayout.Add(null, true);
+        dynamicLayout.EndVertical();
+
+        Content = dynamicLayout;
+    }
+
+    private Panel createHeaderPanel() {
         var headerPanel = new Panel {
             BackgroundColor = colourLight,
             Padding = 20,
@@ -224,6 +248,10 @@ public class GDPDialog : Dialog<DialogResult> {
             }
         };
 
+        return headerPanel;
+    }
+
+    private DynamicLayout createAuthenticationPanel() {
         var authLabel = new Label {
             Text = "Authentication",
             Font = new Font("Helvetica", 12)
@@ -291,8 +319,10 @@ public class GDPDialog : Dialog<DialogResult> {
         authDynamicLayout.Add(authDynamicLayoutInner);
         authDynamicLayout.EndHorizontal();
 
-        this.selectedAsset = this.getDefaultSelectedAsset();
+        return authDynamicLayout;
+    }
 
+    private DynamicLayout createModelPanel() {
         var modelLabel = new Label {
             Text = "Model",
             Font = new Font("Helvetica", 12)
@@ -336,6 +366,10 @@ public class GDPDialog : Dialog<DialogResult> {
         modelDynamicLayout.Add(modelDynamicLayoutInner);
         modelDynamicLayout.EndHorizontal();
 
+        return modelDynamicLayout;
+    }
+
+    private DynamicLayout createPositionPanel() {
         var positionLabel = new Label {
             Text = "Position",
             Font = new Font("Helvetica", 12)
@@ -421,6 +455,10 @@ public class GDPDialog : Dialog<DialogResult> {
         positionDynamicLayout.Add(positionStackLayoutInner);
         positionDynamicLayout.EndHorizontal();
 
+        return positionDynamicLayout;
+    }
+
+    private DynamicLayout createButtonsPanel() {
         DefaultButton = new Button{Text = "Import"};
         DefaultButton.Click += (sender, e) => {
             DialogResult result = this.getUserInput();
@@ -450,19 +488,7 @@ public class GDPDialog : Dialog<DialogResult> {
         buttonsDynamicLayout.Add(null, true);
         buttonsDynamicLayout.EndHorizontal();
 
-        var dynamicLayout = new DynamicLayout {
-            BackgroundColor = colourDarker
-        };
-        dynamicLayout.BeginVertical();
-        dynamicLayout.Add(headerPanel, true);
-        dynamicLayout.Add(authDynamicLayout, true);
-        dynamicLayout.Add(modelDynamicLayout, true);
-        dynamicLayout.Add(positionDynamicLayout, true);
-        dynamicLayout.Add(buttonsDynamicLayout, true);
-        dynamicLayout.Add(null, true);
-        dynamicLayout.EndVertical();
-
-        Content = dynamicLayout;
+        return buttonsDynamicLayout;
     }
 
     private void selectNewModel() {
