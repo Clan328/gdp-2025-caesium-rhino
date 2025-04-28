@@ -19,6 +19,7 @@ public class Styling {
     public static Color colourLight = Color.FromRgb(0x96BE8C);
     public static Color colourDark = Color.FromRgb(0x629460);
     public static Color colourDarker = Color.FromRgb(0x243119);
+    public static string fontName = "Helvetica";
 
     public static Panel createHeaderPanel(string title, string subtitle) {
         var headerPanel = new Panel {
@@ -44,7 +45,7 @@ public class Styling {
     public static Label label(string text, int fontSize, bool bold = false) {
         return new Label{
             Text = text,
-            Font = new Font("Helvetica", fontSize, bold ? FontStyle.Bold : FontStyle.None)
+            Font = new Font(Styling.fontName, fontSize, bold ? FontStyle.Bold : FontStyle.None)
         };
     }
 }
@@ -147,14 +148,14 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         var descriptionFontStyle = asset.description == null ? FontStyle.Italic : FontStyle.None;
         var descriptionLabel = new Label {
             Text = descriptionText,
-            Font = new Font("Helvetica", 11, descriptionFontStyle)
+            Font = new Font(Styling.fontName, 11, descriptionFontStyle)
         };
 
         var attributionText = asset.attribution == null ? "No asset attribution provided." : asset.attribution;
         var attributionFontStyle = asset.attribution == null ? FontStyle.Italic : FontStyle.None;
         var attributionLabel = new Label {
             Text = attributionText,
-            Font = new Font("Helvetica", 9, attributionFontStyle)
+            Font = new Font(Styling.fontName, 9, attributionFontStyle)
         };
         var attributionLabelPanel = new Panel {
             Padding = new Padding(0, 10, 0, 0),
