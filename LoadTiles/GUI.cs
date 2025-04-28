@@ -22,7 +22,7 @@ public class Styling {
     public static Color colourDarker = Color.FromRgb(0x243119);
     public static string fontName = "Helvetica";
 
-    public static Panel createHeaderPanel(string title, string subtitle) {
+    public static Panel createHeaderPanel(string title, string subtitle, bool includeHelpButton) {
         var headerPanel = new Panel {
             BackgroundColor = colourLight,
             Padding = 20
@@ -32,10 +32,39 @@ public class Styling {
         var subtitleLabel = label(subtitle, 10);
 
         var dynamicLayout = new DynamicLayout();
-        dynamicLayout.BeginVertical();
-        dynamicLayout.Add(titleLabel);
-        dynamicLayout.Add(subtitleLabel);
-        dynamicLayout.EndVertical();
+        if (includeHelpButton) {
+            var textDynamicLayout = new DynamicLayout();
+            textDynamicLayout.BeginVertical();
+            textDynamicLayout.Add(titleLabel);
+            textDynamicLayout.Add(subtitleLabel);
+            textDynamicLayout.EndVertical();
+
+            var helpButton = new Button {Text = "Help"};
+            if (title == "Fetch data") {
+                helpButton.Click += (sender, e) => {
+                    GDPHelpDialog dialog = new GDPHelpDialog();
+                    dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+                };
+            }
+
+            var buttonDynamicLayout = new DynamicLayout();
+            buttonDynamicLayout.BeginVertical();
+            buttonDynamicLayout.Add(null, true, true);
+            buttonDynamicLayout.Add(helpButton, true, false);
+            buttonDynamicLayout.Add(null, true, true);
+            buttonDynamicLayout.EndVertical();
+            
+            dynamicLayout.BeginHorizontal();
+            dynamicLayout.Add(textDynamicLayout);
+            dynamicLayout.Add(null, true);
+            dynamicLayout.Add(buttonDynamicLayout);
+            dynamicLayout.EndHorizontal();
+        } else {
+            dynamicLayout.BeginVertical();
+            dynamicLayout.Add(titleLabel);
+            dynamicLayout.Add(subtitleLabel);
+            dynamicLayout.EndVertical();
+        }
 
         headerPanel.Content = dynamicLayout;
 
@@ -92,7 +121,8 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
     private DynamicLayout createDialogContent(List<CesiumAsset> assets) {
         var headerPanel = Styling.createHeaderPanel(
             "Cesium ion assets",
-            "These are the assets that you have access to with your Cesium ion account. Select which one you'd like to import."
+            "These are the assets that you have access to with your Cesium ion account. Select which one you'd like to import.",
+            false // TODO: maybe implement help?
         );
         var assetsPanel = createAssetsPanel(assets);
         var buttonDynamicLayout = createButtonPanel();
@@ -286,7 +316,8 @@ public class GDPDialog : Dialog<DialogResult> {
     private DynamicLayout createDialogContent() {
         var headerPanel = Styling.createHeaderPanel(
             "Fetch data",
-            "What data do you want to import?"
+            "What data do you want to import?",
+            true
         );
         var authDynamicLayout = createAuthenticationPanel();
         var modelDynamicLayout = createModelPanel();

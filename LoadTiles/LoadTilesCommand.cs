@@ -294,7 +294,7 @@ namespace LoadTiles
             if (this.locationInputted) {
                 dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance, this.selectedAsset);
             }
-            DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow); 
+            DialogResult result = dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
 
             if (result == null) {
                 RhinoApp.WriteLine("User canceled input.");
