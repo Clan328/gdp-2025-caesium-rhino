@@ -202,6 +202,10 @@ public class GDPDialog : Dialog<DialogResult> {
 
         this.selectedAsset = this.getDefaultSelectedAsset();
 
+        Content = createDialogContent();
+    }
+
+    private DynamicLayout createDialogContent() {
         var headerPanel = createHeaderPanel();
         var authDynamicLayout = createAuthenticationPanel();
         var modelDynamicLayout = createModelPanel();
@@ -220,7 +224,7 @@ public class GDPDialog : Dialog<DialogResult> {
         dynamicLayout.Add(null, true);
         dynamicLayout.EndVertical();
 
-        Content = dynamicLayout;
+        return dynamicLayout;
     }
 
     private Panel createHeaderPanel() {
@@ -230,15 +234,8 @@ public class GDPDialog : Dialog<DialogResult> {
             Width = 100000 // Surely there is a better way of doing this.
         };
 
-        var titleLabel = new Label {
-            Text = "Fetch data",
-            Font = new Font("Helvetica", 18, FontStyle.Bold)
-        };
-
-        var subtitleLabel = new Label {
-            Text = "What data do you want to import?",
-            Font = new Font("Helvetica", 10)
-        };
+        var titleLabel = label("Fetch data", 18, true);
+        var subtitleLabel = label("What data do you want to import?", 10);
 
         headerPanel.Content = new StackLayout {
             Orientation = Orientation.Vertical,
@@ -252,18 +249,12 @@ public class GDPDialog : Dialog<DialogResult> {
     }
 
     private DynamicLayout createAuthenticationPanel() {
-        var authLabel = new Label {
-            Text = "Authentication",
-            Font = new Font("Helvetica", 12)
-        };
+        var authLabel = label("Authentication", 12);
 
         string loggedInText = "You are logged in.";
         string loggedOutText = "You are logged out.";
 
-        var loggedInLabel = new Label {
-            Text = AuthSession.IsLoggedIn ? loggedInText : loggedOutText,
-            Font = new Font("Helvetica", 10)
-        };
+        var loggedInLabel = label(AuthSession.IsLoggedIn ? loggedInText : loggedOutText, 10);
         var loggedInLabelPanel = new Panel {
             Padding = new Padding(0, 0, 30, 0),
             Content = loggedInLabel
@@ -323,15 +314,9 @@ public class GDPDialog : Dialog<DialogResult> {
     }
 
     private DynamicLayout createModelPanel() {
-        var modelLabel = new Label {
-            Text = "Model",
-            Font = new Font("Helvetica", 12)
-        };
+        var modelLabel = label("Model", 12);
 
-        this.selectedModelLabel = new Label {
-            Text = this.selectedAsset.name,
-            Font = new Font("Helvetica", 10, FontStyle.Bold)
-        };
+        this.selectedModelLabel = label(this.selectedAsset.name, 10, true);
         var selectedModelLabelPanel = new Panel {
             Padding = new Padding(0, 0, 20, 0),
             Content = this.selectedModelLabel
@@ -370,41 +355,26 @@ public class GDPDialog : Dialog<DialogResult> {
     }
 
     private DynamicLayout createPositionPanel() {
-        var positionLabel = new Label {
-            Text = "Position",
-            Font = new Font("Helvetica", 12)
-        };
+        var positionLabel = label("Position", 12);
 
-        var latitudeLabel = new Label {
-            Text = "Latitude",
-            Font = new Font("Helvetica", 10)
-        };
+        var latitudeLabel = label("Latitude", 10);
         this.latitudeTextBox = new TextBox();
         var latitudeStackLayout = new StackLayout {
             Orientation = Orientation.Vertical,
             Items = { latitudeLabel, this.latitudeTextBox }
         };
 
-        var longitudeLabel = new Label {
-            Text = "Longitude",
-            Font = new Font("Helvetica", 10)
-        };
+        var longitudeLabel = label("Longitude", 10);
         this.longitudeTextBox = new TextBox();
         var longitudeStackLayout = new StackLayout {
             Orientation = Orientation.Vertical,
             Items = { longitudeLabel, this.longitudeTextBox }
         };
 
-        var altitudeLabel = new Label {
-            Text = "Altitude",
-            Font = new Font("Helvetica", 10)
-        };
+        var altitudeLabel = label("Altitude", 10);
         this.altitudeTextBox = new TextBox();
         this.altitudeTextBox.Text = "0";
-        var altitudeTextBoxLabel = new Label {
-            Text = "  metres",
-            Font = new Font("Helvetica", 9)
-        };
+        var altitudeTextBoxLabel = label("  metres", 9);
         var altitudeTextBoxStackLayout = new StackLayout {
             Orientation = Orientation.Horizontal,
             Items = { this.altitudeTextBox, new StackLayoutItem(altitudeTextBoxLabel, VerticalAlignment.Center) }
@@ -414,16 +384,10 @@ public class GDPDialog : Dialog<DialogResult> {
             Items = { altitudeLabel, altitudeTextBoxStackLayout }
         };
 
-        var radiusLabel = new Label {
-            Text = "Radius",
-            Font = new Font("Helvetica", 10)
-        };
+        var radiusLabel = label("Radius", 10);
         this.radiusTextBox = new TextBox();
         this.radiusTextBox.Text = "200";
-        var radiusTextBoxLabel = new Label {
-            Text = "  metres",
-            Font = new Font("Helvetica", 9)
-        };
+        var radiusTextBoxLabel = label("  metres", 9);
         var radiusTextBoxStackLayout = new StackLayout {
             Orientation = Orientation.Horizontal,
             Items = { this.radiusTextBox, new StackLayoutItem(radiusTextBoxLabel, VerticalAlignment.Center) }
@@ -489,6 +453,13 @@ public class GDPDialog : Dialog<DialogResult> {
         buttonsDynamicLayout.EndHorizontal();
 
         return buttonsDynamicLayout;
+    }
+
+    private Label label(string text, int fontSize, bool bold = false) {
+        return new Label{
+            Text = text,
+            Font = new Font("Helvetica", fontSize, bold ? FontStyle.Bold : FontStyle.None)
+        };
     }
 
     private void selectNewModel() {
