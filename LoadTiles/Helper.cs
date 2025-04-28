@@ -64,15 +64,10 @@ public static class Helper {
     }
 
     /// <summary>
-    /// Calculates the ground distance between two points in ECEF coordinates (EPSG:4978), ignoring altitude.
+    /// Calculates the distance between two points on the Earth's surface using the Haversine formula.
+    /// The points are specified in radians.
     /// </summary>
-    /// <param name="point1">First point in ECEF coordinates</param>
-    /// <param name="point2">Second point in ECEF coordinates</param>
-    /// <returns>Distance in meters</returns>
-    public static double GroundDistance(Point3d point1, Point3d point2) {
-        (double lat1, double lon1, _) = EPSG4978ToLatLonRadians(point1);
-        (double lat2, double lon2, _) = EPSG4978ToLatLonRadians(point2);
-        
+    private static double GroundDistance(double lat1, double lon1, double lat2, double lon2) {
         // Haversine formula to calculate the distance between two points on the Earth
         double dLat = lat2 - lat1;
         double dLon = lon2 - lon1;
@@ -83,13 +78,32 @@ public static class Helper {
     }
 
     /// <summary>
+    /// Calculates the distance from a point to the centre of a bounding volume.
+    /// </summary>
+    public static double PointDistanceToBoundingVolume(Point3d point, BoundingVolume boundingVolume) {
+        if (boundingVolume.Box != null) {
+            (double lat1, double lon1, _) = EPSG4978ToLatLonRadians(boundingVolume.Box.Center);
+            (double lat2, double lon2, _) = EPSG4978ToLatLonRadians(point);
+            return GroundDistance(lat1, lon1, lat2, lon2);
+        } else if (boundingVolume.Sphere != null) {
+            (double lat1, double lon1, _) = EPSG4978ToLatLonRadians(boundingVolume.Sphere.Center);
+            (double lat2, double lon2, _) = EPSG4978ToLatLonRadians(point);
+            return GroundDistance(lat1, lon1, lat2, lon2);
+        } else if (boundingVolume.Region != null) {
+            double lat1 = (boundingVolume.Region.South + boundingVolume.Region.North) / 2.0;
+            double lon1 = (boundingVolume.Region.West + boundingVolume.Region.East) / 2.0;
+            (double lat2, double lon2, _) = EPSG4978ToLatLonRadians(point);
+            return GroundDistance(lat1, lon1, lat2, lon2);
+        } else {
+            throw new NotImplementedException("Bounding volume type not supported.");
+        }
+    }
+
+    /// <summary>
     /// Calculates the distance from a point to the nearest edge of a tile.
     /// If the point is inside the tile, the distance is 0.
     /// Only implemented for tiles with a rectangular bounding box.
     /// </summary>
-    /// <param name="point"></param>
-    /// <param name="tile"></param>
-    /// <returns></returns>
     public static double PointDistanceToTile(Point3d point, Tile tile) {
         if (tile.BoundingVolume.Box == null) {
             throw new NotImplementedException("Only rectangular bounding boxes are supported.");
@@ -100,7 +114,9 @@ public static class Helper {
         } else {
             Brep brepBox = box.AsBox().ToBrep();
             Point3d boundaryPoint = brepBox.ClosestPoint(point);
-            return GroundDistance(point, boundaryPoint);
+            (double lat1, double lon1, _) = EPSG4978ToLatLonRadians(point);
+            (double lat2, double lon2, _) = EPSG4978ToLatLonRadians(boundaryPoint);
+            return GroundDistance(lat1, lon1, lat2, lon2);
         }
     }
 }
