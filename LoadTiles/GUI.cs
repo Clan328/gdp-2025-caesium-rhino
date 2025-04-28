@@ -55,115 +55,13 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         ClientSize = new Size(800, 600);
         Resizable = true;
 
+        Content = createDialogContent(assets);
+    }
+
+    private DynamicLayout createDialogContent(List<CesiumAsset> assets) {
         var headerPanel = createHeaderPanel();
-
-        var assetsDynamicLayout = new DynamicLayout {
-            Padding = 15,
-            Height = -1
-        };
-        assetsDynamicLayout.BeginVertical();
-
-        foreach (CesiumAsset asset in assets) {
-            if (asset.id == null) continue;
-
-            var nameLabel = label(asset.name, 16, true);
-
-            var descriptionText = asset.description == null ? "No asset description provided." : asset.description;
-            var descriptionFontStyle = asset.description == null ? FontStyle.Italic : FontStyle.None;
-            var descriptionLabel = new Label {
-                Text = descriptionText,
-                Font = new Font("Helvetica", 11, descriptionFontStyle)
-            };
-
-            var attributionText = asset.attribution == null ? "No asset attribution provided." : asset.attribution;
-            var attributionFontStyle = asset.attribution == null ? FontStyle.Italic : FontStyle.None;
-            var attributionLabel = new Label {
-                Text = attributionText,
-                Font = new Font("Helvetica", 9, attributionFontStyle)
-            };
-            var attributionLabelPanel = new Panel {
-                Padding = new Padding(0, 10, 0, 0),
-                Content = attributionLabel
-            };
-
-            var idLabel = label($"ID: {asset.id}", 10, true);
-
-            var dateText = asset.dateAdded == null ? "Date added: unknown" : $"Date added: {asset.dateAdded}";
-            var dateLabel = label(dateText, 10, true);
-
-            StackLayout metadataStackLayout = new StackLayout {
-                Orientation = Orientation.Horizontal,
-                Spacing = 30,
-                Padding = new Padding(0, 0, 0, 20),
-                Items = { idLabel, dateLabel }
-            };
-
-            Button importButton = new Button{Text = "Select"};
-            importButton.Click += (sender, e) => {
-                Close(asset);
-            };
-
-            var importButtonDynamicLayout = new DynamicLayout {
-                Padding = new Padding(0, 10, 0, 0)
-            };
-            importButtonDynamicLayout.BeginHorizontal();
-            importButtonDynamicLayout.Add(null, true);
-            importButtonDynamicLayout.Add(importButton);
-            importButtonDynamicLayout.Add(null, true);
-            importButtonDynamicLayout.EndHorizontal();
-
-            var assetDynamicLayout = new DynamicLayout {
-                BackgroundColor = colourLighter,
-                Padding = 10,
-                Width = 0
-            };
-            assetDynamicLayout.BeginVertical();
-            assetDynamicLayout.Add(nameLabel);
-            assetDynamicLayout.Add(metadataStackLayout);
-            assetDynamicLayout.Add(descriptionLabel);
-            assetDynamicLayout.Add(attributionLabelPanel);
-            assetDynamicLayout.Add(importButtonDynamicLayout);
-            assetDynamicLayout.EndVertical();
-
-            var assetPanel = new Panel {
-                Padding = new Padding(0, 0, 0, 15),
-                Content = assetDynamicLayout
-            };
-
-            assetsDynamicLayout.Add(assetPanel, true, false);
-        }
-
-        assetsDynamicLayout.Add(null, false, false); // TODO: why is there random blank space at the bottom of the Scrollable?
-
-        assetsDynamicLayout.EndVertical();
-
-        var assetsScrollable = new Scrollable {
-            BackgroundColor = colourDark,
-            Border = BorderType.None,
-            Content = assetsDynamicLayout
-        };
-        var assetsPanel = new Panel {
-            Padding = new Padding(20, 20, 20, 0),
-            Content = assetsScrollable
-        };
-
-        AbortButton = new Button{Text = "Cancel"};
-        AbortButton.Click += (sender, e) => Close(null);
-
-        var buttonPanel = new Panel {
-            BackgroundColor = colourLight,
-            Padding = 10,
-            Content = AbortButton
-        };
-
-        var buttonDynamicLayout = new DynamicLayout {
-            Padding = new Padding(0, 30, 0, 10)
-        };
-        buttonDynamicLayout.BeginHorizontal();
-        buttonDynamicLayout.Add(null, true);
-        buttonDynamicLayout.Add(buttonPanel);
-        buttonDynamicLayout.Add(null, true);
-        buttonDynamicLayout.EndHorizontal();
+        var assetsPanel = createAssetsPanel(assets);
+        var buttonDynamicLayout = createButtonPanel();
 
         var dynamicLayout = new DynamicLayout {
             BackgroundColor = colourDarker
@@ -174,7 +72,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         dynamicLayout.Add(buttonDynamicLayout);
         dynamicLayout.EndVertical();
 
-        Content = dynamicLayout;
+        return dynamicLayout;
     }
 
     private Panel createHeaderPanel() {
@@ -196,6 +94,128 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         };
 
         return headerPanel;
+    }
+
+    private Panel createAssetsPanel(List<CesiumAsset> assets) {
+        var assetsDynamicLayout = new DynamicLayout {
+            Padding = 15,
+            Height = -1
+        };
+        assetsDynamicLayout.BeginVertical();
+
+        foreach (CesiumAsset asset in assets) {
+            if (asset.id == null) continue;
+
+            var assetPanel = createAssetPanel(asset);
+
+            assetsDynamicLayout.Add(assetPanel, true, false);
+        }
+
+        assetsDynamicLayout.Add(null, false, false); // TODO: why is there random blank space at the bottom of the Scrollable?
+
+        assetsDynamicLayout.EndVertical();
+
+        var assetsScrollable = new Scrollable {
+            BackgroundColor = colourDark,
+            Border = BorderType.None,
+            Content = assetsDynamicLayout
+        };
+        var assetsPanel = new Panel {
+            Padding = new Padding(20, 20, 20, 0),
+            Content = assetsScrollable
+        };
+
+        return assetsPanel;
+    }
+
+    private Panel createAssetPanel(CesiumAsset asset) {
+        var nameLabel = label(asset.name, 16, true);
+
+        var descriptionText = asset.description == null ? "No asset description provided." : asset.description;
+        var descriptionFontStyle = asset.description == null ? FontStyle.Italic : FontStyle.None;
+        var descriptionLabel = new Label {
+            Text = descriptionText,
+            Font = new Font("Helvetica", 11, descriptionFontStyle)
+        };
+
+        var attributionText = asset.attribution == null ? "No asset attribution provided." : asset.attribution;
+        var attributionFontStyle = asset.attribution == null ? FontStyle.Italic : FontStyle.None;
+        var attributionLabel = new Label {
+            Text = attributionText,
+            Font = new Font("Helvetica", 9, attributionFontStyle)
+        };
+        var attributionLabelPanel = new Panel {
+            Padding = new Padding(0, 10, 0, 0),
+            Content = attributionLabel
+        };
+
+        var idLabel = label($"ID: {asset.id}", 10, true);
+
+        var dateText = asset.dateAdded == null ? "Date added: unknown" : $"Date added: {asset.dateAdded}";
+        var dateLabel = label(dateText, 10, true);
+
+        StackLayout metadataStackLayout = new StackLayout {
+            Orientation = Orientation.Horizontal,
+            Spacing = 30,
+            Padding = new Padding(0, 0, 0, 20),
+            Items = { idLabel, dateLabel }
+        };
+
+        Button importButton = new Button{Text = "Select"};
+        importButton.Click += (sender, e) => {
+            Close(asset);
+        };
+
+        var importButtonDynamicLayout = new DynamicLayout {
+            Padding = new Padding(0, 10, 0, 0)
+        };
+        importButtonDynamicLayout.BeginHorizontal();
+        importButtonDynamicLayout.Add(null, true);
+        importButtonDynamicLayout.Add(importButton);
+        importButtonDynamicLayout.Add(null, true);
+        importButtonDynamicLayout.EndHorizontal();
+
+        var assetDynamicLayout = new DynamicLayout {
+            BackgroundColor = colourLighter,
+            Padding = 10,
+            Width = 0
+        };
+        assetDynamicLayout.BeginVertical();
+        assetDynamicLayout.Add(nameLabel);
+        assetDynamicLayout.Add(metadataStackLayout);
+        assetDynamicLayout.Add(descriptionLabel);
+        assetDynamicLayout.Add(attributionLabelPanel);
+        assetDynamicLayout.Add(importButtonDynamicLayout);
+        assetDynamicLayout.EndVertical();
+
+        var assetPanel = new Panel {
+            Padding = new Padding(0, 0, 0, 15),
+            Content = assetDynamicLayout
+        };
+
+        return assetPanel;
+    }
+
+    private DynamicLayout createButtonPanel() {
+        AbortButton = new Button{Text = "Cancel"};
+        AbortButton.Click += (sender, e) => Close(null);
+
+        var buttonPanel = new Panel {
+            BackgroundColor = colourLight,
+            Padding = 10,
+            Content = AbortButton
+        };
+
+        var buttonDynamicLayout = new DynamicLayout {
+            Padding = new Padding(0, 30, 0, 10)
+        };
+        buttonDynamicLayout.BeginHorizontal();
+        buttonDynamicLayout.Add(null, true);
+        buttonDynamicLayout.Add(buttonPanel);
+        buttonDynamicLayout.Add(null, true);
+        buttonDynamicLayout.EndHorizontal();
+
+        return buttonDynamicLayout;
     }
 
     private Label label(string text, int fontSize, bool bold = false) {
