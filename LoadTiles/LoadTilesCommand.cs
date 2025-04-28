@@ -351,6 +351,11 @@ namespace LoadTiles
 
             RhinoApp.WriteLine("Tiles loaded.");
 
+            if (result.applyPreviousMasking) {
+                RhinoApp.WriteLine("Applying previous masking...");
+                // TODO: run the Mask command with the loaded data
+            }
+
             return Result.Success;
         }
     }

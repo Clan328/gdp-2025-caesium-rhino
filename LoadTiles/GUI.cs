@@ -239,13 +239,15 @@ public class DialogResult {
     public double longitude;
     public double altitude;
     public double radius;
-    public DialogResult(string apiKey, CesiumAsset selectedAsset, double latitude, double longitude, double altitude, double radius) {
+    public bool applyPreviousMasking;
+    public DialogResult(string apiKey, CesiumAsset selectedAsset, double latitude, double longitude, double altitude, double radius, bool applyPreviousMasking) {
         this.apiKey = apiKey;
         this.selectedAsset = selectedAsset;
         this.latitude = latitude;
         this.longitude = longitude;
         this.altitude = altitude;
         this.radius = radius;
+        this.applyPreviousMasking = applyPreviousMasking;
     }
 }
 
@@ -255,6 +257,8 @@ public class GDPDialog : Dialog<DialogResult> {
     private TextBox altitudeTextBox;
     private TextBox radiusTextBox;
     private Button authButton;
+    private CheckBox maskingCheckBox;
+    private bool maskingDataLoadedFromFile = false;
 
     private CesiumAsset selectedAsset;
     private Label selectedModelLabel;
@@ -270,7 +274,7 @@ public class GDPDialog : Dialog<DialogResult> {
 
     public GDPDialog() {
         Title = "Fetch real world data";
-        ClientSize = new Size(400, 550);
+        ClientSize = new Size(400, 650);
 
         this.selectedAsset = this.getDefaultSelectedAsset();
 
@@ -285,6 +289,7 @@ public class GDPDialog : Dialog<DialogResult> {
         var authDynamicLayout = createAuthenticationPanel();
         var modelDynamicLayout = createModelPanel();
         var positionDynamicLayout = createPositionPanel();
+        var maskingDynamicLayout = createMaskingPanel();
         var buttonsDynamicLayout = createButtonsPanel();
 
         var dynamicLayout = new DynamicLayout {
@@ -295,6 +300,7 @@ public class GDPDialog : Dialog<DialogResult> {
         dynamicLayout.Add(authDynamicLayout, true);
         dynamicLayout.Add(modelDynamicLayout, true);
         dynamicLayout.Add(positionDynamicLayout, true);
+        dynamicLayout.Add(maskingDynamicLayout, true);
         dynamicLayout.Add(buttonsDynamicLayout, true);
         dynamicLayout.Add(null, true);
         dynamicLayout.EndVertical();
@@ -484,6 +490,46 @@ public class GDPDialog : Dialog<DialogResult> {
         return positionDynamicLayout;
     }
 
+    private DynamicLayout createMaskingPanel() {
+        var maskingLabel = Styling.label("Masking", 12);
+        var descriptorText =
+            this.maskingDataLoadedFromFile ?
+                "Do you want to reapply the same masking that was performed when the file was last saved?"
+                : "No previous masking data found in the current project.";
+        var maskingDescriptorLabel = Styling.label(descriptorText, 10);
+
+        this.maskingCheckBox = new CheckBox() {
+            Text = "Apply saved masking",
+            Checked = true
+        };
+        if (!this.maskingDataLoadedFromFile) {
+            this.maskingCheckBox.Enabled = false;
+        }
+
+        var checkBoxPanel = new Panel {
+            Padding = new Padding(0, 10, 0, 0),
+            Content = this.maskingCheckBox
+        };
+
+        var maskingDynamicLayoutInner = new DynamicLayout {
+            BackgroundColor = Styling.colourDark,
+            Padding = 10
+        };
+        maskingDynamicLayoutInner.BeginVertical();
+        maskingDynamicLayoutInner.Add(maskingLabel);
+        maskingDynamicLayoutInner.Add(maskingDescriptorLabel);
+        maskingDynamicLayoutInner.Add(checkBoxPanel);
+        maskingDynamicLayoutInner.EndVertical();
+        var maskingDynamicLayout = new DynamicLayout {
+            Padding = new Padding(20, 20, 20, 0)
+        };
+        maskingDynamicLayout.BeginHorizontal();
+        maskingDynamicLayout.Add(maskingDynamicLayoutInner);
+        maskingDynamicLayout.EndHorizontal();
+
+        return maskingDynamicLayout;
+    }
+
     private DynamicLayout createButtonsPanel() {
         DefaultButton = new Button{Text = "Import"};
         DefaultButton.Click += (sender, e) => {
@@ -602,6 +648,9 @@ public class GDPDialog : Dialog<DialogResult> {
             this.radiusTextBox.TextColor = Colors.Black;
         }
 
+        bool applyPreviousMasking = false;
+        if (this.maskingCheckBox.Checked != null) applyPreviousMasking = (bool) this.maskingCheckBox.Checked;
+
         RhinoApp.WriteLine("Fetch Successful! \n" +
             "Model Name: " + this.selectedAsset.name + "\n" +
             "Latitude: " + latitude.ToString() + "\n" +
@@ -616,7 +665,8 @@ public class GDPDialog : Dialog<DialogResult> {
             latitude,
             longitude,
             altitude,
-            radius
+            radius,
+            applyPreviousMasking
         );
     }
 }
