@@ -13,7 +13,35 @@ namespace LoadTiles;
 public class MaskingCommand : Command {
     public override string EnglishName => "Mask";
 
+    public List<Guid> maskingObjects = new List<Guid>();
+
+    public string maskingDataFromFile = "";
+
+    public void applyMaskingDataFromFile(RhinoDoc doc) {
+        if (maskingDataFromFile.Length == 0) return;
+
+        string[] guids = maskingDataFromFile.Split(",");
+        foreach (string guidString in guids) {
+            Guid guid = Guid.Parse(guidString);
+            Result result = performMasking(doc, guid);
+            if (result == Result.Success) maskingObjects.Add(guid);
+        }
+    }
+
     protected override Result RunCommand(RhinoDoc doc, RunMode mode) {
+        var objRef = getObjectFromUser();
+        if (objRef == null) return Result.Failure;
+
+        Result result = performMasking(doc, objRef.ObjectId);
+
+        if (result != Result.Success) return Result.Failure;
+
+        maskingObjects.Add(objRef.ObjectId);
+
+        return result;
+    }
+
+    private ObjRef? getObjectFromUser() {
         var getObject = new GetObject();
         getObject.SetCommandPrompt("Select a masking object");
         getObject.GeometryFilter = ObjectType.Brep;
@@ -22,11 +50,15 @@ public class MaskingCommand : Command {
         getObject.DisablePreSelect();
 
         getObject.Get();
-        if (getObject.CommandResult() != Result.Success) return getObject.CommandResult();
+        if (getObject.CommandResult() != Result.Success) return null;
 
-        var objRef = getObject.Object(0);
+        return getObject.Object(0);
+    }
+
+    private Result performMasking(RhinoDoc doc, Guid targetObjectGuid) {
+        var objRef = new ObjRef(doc, targetObjectGuid);
         if (objRef == null) return Result.Failure;
-
+        
         var targetBrep = objRef.Brep();
         if (targetBrep == null) {
             RhinoApp.WriteLine("Selected object is not a Brep.");

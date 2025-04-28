@@ -10,6 +10,7 @@ using Rhino.UI;
 using System.Collections.Generic;
 using System.Text.Json;
 using CesiumAuthentication;
+using Rhino.PlugIns;
 
 namespace LoadTiles;
 
@@ -272,11 +273,13 @@ public class GDPDialog : Dialog<DialogResult> {
         );
     }
 
-    public GDPDialog() {
+    public GDPDialog(bool maskingDataLoadedFromFile) {
         Title = "Fetch real world data";
         ClientSize = new Size(400, 650);
 
         this.selectedAsset = this.getDefaultSelectedAsset();
+
+        this.maskingDataLoadedFromFile = maskingDataLoadedFromFile;
 
         Content = createDialogContent();
     }

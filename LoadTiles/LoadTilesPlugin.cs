@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using Rhino;
+using Rhino.DocObjects;
 
 namespace LoadTiles
 {
@@ -39,9 +42,12 @@ namespace LoadTiles
             Console.WriteLine("WriteDocument invoked");
             Rhino.Commands.Command[] commands = GetCommands();
             LoadTilesCommand loadTilesCommand = null;
+            MaskingCommand maskingCommand = null;
             foreach (Rhino.Commands.Command command in commands) {
                 if (command.EnglishName == "Fetch") {
                     loadTilesCommand = (LoadTilesCommand) command;
+                } else if (command.EnglishName == "Mask") {
+                    maskingCommand = (MaskingCommand) command;
                 }
             }
             if (loadTilesCommand == null) {
@@ -61,6 +67,15 @@ namespace LoadTiles
             userDataDictionary.Set("radius", loadTilesCommand.renderDistance);
             userDataDictionary.Set("assetName", loadTilesCommand.selectedAsset.name);
             if (loadTilesCommand.selectedAsset.id != null) userDataDictionary.Set("assetId", (int) loadTilesCommand.selectedAsset.id);
+
+            if (maskingCommand != null) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < maskingCommand.maskingObjects.Count; i++) {
+                    sb.Append(maskingCommand.maskingObjects[i]);
+                    if (i < maskingCommand.maskingObjects.Count - 1) sb.Append(",");
+                }
+                userDataDictionary.Set("maskingObjects", sb.ToString());
+            }
             
             // Write the version of our document data
             archive.Write3dmChunkVersion(MAJOR, MINOR);
@@ -82,12 +97,19 @@ namespace LoadTiles
                 double radius = userDataDictionary.GetDouble("radius");
                 string assetName = userDataDictionary.GetString("assetName", "Google Photorealistic 3D Tiles");
                 int assetId = userDataDictionary.GetInteger("assetId", 2275207);
+                string maskingObjectsString = "";
+                try {
+                    maskingObjectsString = userDataDictionary.GetString("maskingObjects");
+                } catch {}
 
                 Rhino.Commands.Command[] commands = GetCommands();
                 LoadTilesCommand loadTilesCommand = null;
+                MaskingCommand maskingCommand = null;
                 foreach (Rhino.Commands.Command command in commands) {
                     if (command.EnglishName == "Fetch") {
                         loadTilesCommand = (LoadTilesCommand) command;
+                    } else if (command.EnglishName == "Mask") {
+                        maskingCommand = (MaskingCommand) command;
                     }
                 }
                 if (loadTilesCommand == null) {
@@ -105,6 +127,12 @@ namespace LoadTiles
                     null, null, "", null, null, null, null, null, null
                 );
                 loadTilesCommand.locationInputted = true;
+
+                if (maskingObjectsString.Length > 0 && maskingCommand != null) {
+                    maskingCommand.maskingDataFromFile = maskingObjectsString;
+                    Console.WriteLine("Masking data from file found.");
+                    Console.WriteLine(maskingCommand.maskingDataFromFile);
+                }
             }
         }
         

@@ -288,7 +288,9 @@ namespace LoadTiles
              */
             bool valuesNotInitialised = key == null || session == null || url == null;
 
-            GDPDialog dialog = new();
+            bool maskingDataLoadedFromFile = hasMaskingDataBeenFound();
+
+            GDPDialog dialog = new GDPDialog(maskingDataLoadedFromFile);
             if (this.locationInputted) {
                 dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance, this.selectedAsset);
             }
@@ -351,12 +353,39 @@ namespace LoadTiles
 
             RhinoApp.WriteLine("Tiles loaded.");
 
-            if (result.applyPreviousMasking) {
+            if (result.applyPreviousMasking && maskingDataLoadedFromFile) {
                 RhinoApp.WriteLine("Applying previous masking...");
-                // TODO: run the Mask command with the loaded data
+                reapplyMaskingFromFile(doc);
+                RhinoApp.WriteLine("Previous masking has been applied.");
             }
 
             return Result.Success;
+        }
+
+        private void reapplyMaskingFromFile(RhinoDoc doc) {
+            Command[] commands = PlugIn.GetCommands();
+            MaskingCommand maskingCommand = null;
+            foreach (Command command in commands) {
+                if (command.EnglishName == "Mask") {
+                    maskingCommand = (MaskingCommand) command;
+                }
+            }
+            if (maskingCommand == null) return;
+
+            maskingCommand.applyMaskingDataFromFile(doc);
+        }
+
+        private bool hasMaskingDataBeenFound() {
+            Command[] commands = PlugIn.GetCommands();
+            MaskingCommand maskingCommand = null;
+            foreach (Command command in commands) {
+                if (command.EnglishName == "Mask") {
+                    maskingCommand = (MaskingCommand) command;
+                }
+            }
+            if (maskingCommand == null) return false;
+
+            return maskingCommand.maskingDataFromFile.Length > 0;
         }
     }
 }
