@@ -13,6 +13,42 @@ using CesiumAuthentication;
 
 namespace LoadTiles;
 
+public class Styling {
+    public static Color colourVeryLight = Color.FromRgb(0xC9F2C7);
+    public static Color colourLighter = Color.FromRgb(0xACECA1);
+    public static Color colourLight = Color.FromRgb(0x96BE8C);
+    public static Color colourDark = Color.FromRgb(0x629460);
+    public static Color colourDarker = Color.FromRgb(0x243119);
+
+    public static Panel createHeaderPanel(string title, string subtitle) {
+        var headerPanel = new Panel {
+            BackgroundColor = colourLight,
+            Padding = 20,
+            Width = 100000 // Surely there is a better way of doing this.
+        };
+
+        var titleLabel = label(title, 18, true);
+        var subtitleLabel = label(subtitle, 10);
+
+        headerPanel.Content = new StackLayout {
+            Orientation = Orientation.Vertical,
+            Items = {
+                titleLabel,
+                subtitleLabel
+            }
+        };
+
+        return headerPanel;
+    }
+
+    public static Label label(string text, int fontSize, bool bold = false) {
+        return new Label{
+            Text = text,
+            Font = new Font("Helvetica", fontSize, bold ? FontStyle.Bold : FontStyle.None)
+        };
+    }
+}
+
 public record class CesiumAsset (
     int? id,
     string name,
@@ -43,13 +79,7 @@ public record class CesiumAssets (
     }
 }
 
-public class CesiumImportDialog : Dialog<CesiumAsset?> {
-    private Color colourVeryLight = Color.FromRgb(0xC9F2C7);
-    private Color colourLighter = Color.FromRgb(0xACECA1);
-    private Color colourLight = Color.FromRgb(0x96BE8C);
-    private Color colourDark = Color.FromRgb(0x629460);
-    private Color colourDarker = Color.FromRgb(0x243119);
-
+public class CesiumImportDialog : Dialog<CesiumAsset?> {  
     public CesiumImportDialog(List<CesiumAsset> assets) {
         Title = "Cesium ion assets";
         ClientSize = new Size(800, 600);
@@ -59,12 +89,15 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
     }
 
     private DynamicLayout createDialogContent(List<CesiumAsset> assets) {
-        var headerPanel = createHeaderPanel();
+        var headerPanel = Styling.createHeaderPanel(
+            "Cesium ion assets",
+            "These are the assets that you have access to with your Cesium ion account. Select which one you'd like to import."
+        );
         var assetsPanel = createAssetsPanel(assets);
         var buttonDynamicLayout = createButtonPanel();
 
         var dynamicLayout = new DynamicLayout {
-            BackgroundColor = colourDarker
+            BackgroundColor = Styling.colourDarker
         };
         dynamicLayout.BeginVertical();
         dynamicLayout.Add(headerPanel, true);
@@ -73,27 +106,6 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         dynamicLayout.EndVertical();
 
         return dynamicLayout;
-    }
-
-    private Panel createHeaderPanel() {
-        var headerPanel = new Panel {
-            BackgroundColor = colourLight,
-            Padding = 20,
-            Width = 100000 // Surely there is a better way of doing this.
-        };
-
-        var titleLabel = label("Cesium ion assets", 18, true);
-        var subtitleLabel = label("These are the assets that you have access to with your Cesium ion account. Select which one you'd like to import.", 10);
-
-        headerPanel.Content = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Items = {
-                titleLabel,
-                subtitleLabel
-            }
-        };
-
-        return headerPanel;
     }
 
     private Panel createAssetsPanel(List<CesiumAsset> assets) {
@@ -116,7 +128,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         assetsDynamicLayout.EndVertical();
 
         var assetsScrollable = new Scrollable {
-            BackgroundColor = colourDark,
+            BackgroundColor = Styling.colourDark,
             Border = BorderType.None,
             Content = assetsDynamicLayout
         };
@@ -129,7 +141,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
     }
 
     private Panel createAssetPanel(CesiumAsset asset) {
-        var nameLabel = label(asset.name, 16, true);
+        var nameLabel = Styling.label(asset.name, 16, true);
 
         var descriptionText = asset.description == null ? "No asset description provided." : asset.description;
         var descriptionFontStyle = asset.description == null ? FontStyle.Italic : FontStyle.None;
@@ -149,10 +161,10 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
             Content = attributionLabel
         };
 
-        var idLabel = label($"ID: {asset.id}", 10, true);
+        var idLabel = Styling.label($"ID: {asset.id}", 10, true);
 
         var dateText = asset.dateAdded == null ? "Date added: unknown" : $"Date added: {asset.dateAdded}";
-        var dateLabel = label(dateText, 10, true);
+        var dateLabel = Styling.label(dateText, 10, true);
 
         StackLayout metadataStackLayout = new StackLayout {
             Orientation = Orientation.Horizontal,
@@ -176,7 +188,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         importButtonDynamicLayout.EndHorizontal();
 
         var assetDynamicLayout = new DynamicLayout {
-            BackgroundColor = colourLighter,
+            BackgroundColor = Styling.colourLighter,
             Padding = 10,
             Width = 0
         };
@@ -201,7 +213,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         AbortButton.Click += (sender, e) => Close(null);
 
         var buttonPanel = new Panel {
-            BackgroundColor = colourLight,
+            BackgroundColor = Styling.colourLight,
             Padding = 10,
             Content = AbortButton
         };
@@ -216,13 +228,6 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         buttonDynamicLayout.EndHorizontal();
 
         return buttonDynamicLayout;
-    }
-
-    private Label label(string text, int fontSize, bool bold = false) {
-        return new Label{
-            Text = text,
-            Font = new Font("Helvetica", fontSize, bold ? FontStyle.Bold : FontStyle.None)
-        };
     }
 }
 
@@ -262,12 +267,6 @@ public class GDPDialog : Dialog<DialogResult> {
         );
     }
 
-    private Color colourVeryLight = Color.FromRgb(0xC9F2C7);
-    private Color colourLighter = Color.FromRgb(0xACECA1);
-    private Color colourLight = Color.FromRgb(0x96BE8C);
-    private Color colourDark = Color.FromRgb(0x629460);
-    private Color colourDarker = Color.FromRgb(0x243119);
-
     public GDPDialog() {
         Title = "Fetch real world data";
         ClientSize = new Size(400, 550);
@@ -278,14 +277,17 @@ public class GDPDialog : Dialog<DialogResult> {
     }
 
     private DynamicLayout createDialogContent() {
-        var headerPanel = createHeaderPanel();
+        var headerPanel = Styling.createHeaderPanel(
+            "Fetch data",
+            "What data do you want to import?"
+        );
         var authDynamicLayout = createAuthenticationPanel();
         var modelDynamicLayout = createModelPanel();
         var positionDynamicLayout = createPositionPanel();
         var buttonsDynamicLayout = createButtonsPanel();
 
         var dynamicLayout = new DynamicLayout {
-            BackgroundColor = colourDarker
+            BackgroundColor = Styling.colourDarker
         };
         dynamicLayout.BeginVertical();
         dynamicLayout.Add(headerPanel, true);
@@ -299,34 +301,13 @@ public class GDPDialog : Dialog<DialogResult> {
         return dynamicLayout;
     }
 
-    private Panel createHeaderPanel() {
-        var headerPanel = new Panel {
-            BackgroundColor = colourLight,
-            Padding = 20,
-            Width = 100000 // Surely there is a better way of doing this.
-        };
-
-        var titleLabel = label("Fetch data", 18, true);
-        var subtitleLabel = label("What data do you want to import?", 10);
-
-        headerPanel.Content = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Items = {
-                titleLabel,
-                subtitleLabel
-            }
-        };
-
-        return headerPanel;
-    }
-
     private DynamicLayout createAuthenticationPanel() {
-        var authLabel = label("Authentication", 12);
+        var authLabel = Styling.label("Authentication", 12);
 
         string loggedInText = "You are logged in.";
         string loggedOutText = "You are logged out.";
 
-        var loggedInLabel = label(AuthSession.IsLoggedIn ? loggedInText : loggedOutText, 10);
+        var loggedInLabel = Styling.label(AuthSession.IsLoggedIn ? loggedInText : loggedOutText, 10);
         var loggedInLabelPanel = new Panel {
             Padding = new Padding(0, 0, 30, 0),
             Content = loggedInLabel
@@ -368,7 +349,7 @@ public class GDPDialog : Dialog<DialogResult> {
         loggedInStatusDynamicLayout.EndHorizontal();
         
         var authDynamicLayoutInner = new DynamicLayout {
-            BackgroundColor = colourDark,
+            BackgroundColor = Styling.colourDark,
             Padding = 10
         };
         authDynamicLayoutInner.BeginVertical();
@@ -386,9 +367,9 @@ public class GDPDialog : Dialog<DialogResult> {
     }
 
     private DynamicLayout createModelPanel() {
-        var modelLabel = label("Model", 12);
+        var modelLabel = Styling.label("Model", 12);
 
-        this.selectedModelLabel = label(this.selectedAsset.name, 10, true);
+        this.selectedModelLabel = Styling.label(this.selectedAsset.name, 10, true);
         var selectedModelLabelPanel = new Panel {
             Padding = new Padding(0, 0, 20, 0),
             Content = this.selectedModelLabel
@@ -409,7 +390,7 @@ public class GDPDialog : Dialog<DialogResult> {
         currentModelDynamicLayout.EndHorizontal();
 
         var modelDynamicLayoutInner = new DynamicLayout {
-            BackgroundColor = colourDark,
+            BackgroundColor = Styling.colourDark,
             Padding = 10
         };
         modelDynamicLayoutInner.BeginVertical();
@@ -427,26 +408,26 @@ public class GDPDialog : Dialog<DialogResult> {
     }
 
     private DynamicLayout createPositionPanel() {
-        var positionLabel = label("Position", 12);
+        var positionLabel = Styling.label("Position", 12);
 
-        var latitudeLabel = label("Latitude", 10);
+        var latitudeLabel = Styling.label("Latitude", 10);
         this.latitudeTextBox = new TextBox();
         var latitudeStackLayout = new StackLayout {
             Orientation = Orientation.Vertical,
             Items = { latitudeLabel, this.latitudeTextBox }
         };
 
-        var longitudeLabel = label("Longitude", 10);
+        var longitudeLabel = Styling.label("Longitude", 10);
         this.longitudeTextBox = new TextBox();
         var longitudeStackLayout = new StackLayout {
             Orientation = Orientation.Vertical,
             Items = { longitudeLabel, this.longitudeTextBox }
         };
 
-        var altitudeLabel = label("Altitude", 10);
+        var altitudeLabel = Styling.label("Altitude", 10);
         this.altitudeTextBox = new TextBox();
         this.altitudeTextBox.Text = "0";
-        var altitudeTextBoxLabel = label("  metres", 9);
+        var altitudeTextBoxLabel = Styling.label("  metres", 9);
         var altitudeTextBoxStackLayout = new StackLayout {
             Orientation = Orientation.Horizontal,
             Items = { this.altitudeTextBox, new StackLayoutItem(altitudeTextBoxLabel, VerticalAlignment.Center) }
@@ -456,10 +437,10 @@ public class GDPDialog : Dialog<DialogResult> {
             Items = { altitudeLabel, altitudeTextBoxStackLayout }
         };
 
-        var radiusLabel = label("Radius", 10);
+        var radiusLabel = Styling.label("Radius", 10);
         this.radiusTextBox = new TextBox();
         this.radiusTextBox.Text = "200";
-        var radiusTextBoxLabel = label("  metres", 9);
+        var radiusTextBoxLabel = Styling.label("  metres", 9);
         var radiusTextBoxStackLayout = new StackLayout {
             Orientation = Orientation.Horizontal,
             Items = { this.radiusTextBox, new StackLayoutItem(radiusTextBoxLabel, VerticalAlignment.Center) }
@@ -480,7 +461,7 @@ public class GDPDialog : Dialog<DialogResult> {
 
         StackLayout positionStackLayoutInner = new StackLayout {
             Orientation = Orientation.Vertical,
-            BackgroundColor = colourDark,
+            BackgroundColor = Styling.colourDark,
             Padding = 10,
             Items = { positionLabel, positionTableLayout }
         };
@@ -511,7 +492,7 @@ public class GDPDialog : Dialog<DialogResult> {
 
         StackLayout buttonsStackLayoutInner = new StackLayout {
             Orientation = Orientation.Horizontal,
-            BackgroundColor = colourLight,
+            BackgroundColor = Styling.colourLight,
             Padding = 10,
             Items = { defaultButtonPanel, AbortButton }
         };
@@ -525,13 +506,6 @@ public class GDPDialog : Dialog<DialogResult> {
         buttonsDynamicLayout.EndHorizontal();
 
         return buttonsDynamicLayout;
-    }
-
-    private Label label(string text, int fontSize, bool bold = false) {
-        return new Label{
-            Text = text,
-            Font = new Font("Helvetica", fontSize, bold ? FontStyle.Bold : FontStyle.None)
-        };
     }
 
     private void selectNewModel() {
