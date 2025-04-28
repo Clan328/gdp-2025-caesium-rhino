@@ -44,112 +44,164 @@ public record class CesiumAssets (
 }
 
 public class CesiumImportDialog : Dialog<CesiumAsset?> {
+    private Color colourVeryLight = Color.FromRgb(0xC9F2C7);
+    private Color colourLighter = Color.FromRgb(0xACECA1);
+    private Color colourLight = Color.FromRgb(0x96BE8C);
+    private Color colourDark = Color.FromRgb(0x629460);
+    private Color colourDarker = Color.FromRgb(0x243119);
+
     public CesiumImportDialog(List<CesiumAsset> assets) {
-        Title = "Cesium ION 3D Tile Import";
-        ClientSize = new Size(1200, 640);
+        Title = "Cesium ion assets";
+        ClientSize = new Size(800, 600);
+        Resizable = true;
 
-        var titleLabel = new Label {
-            Text = "Cesium ION 3D Tile Import",
-            Font = new Font("Helvetica", 18, FontStyle.Bold)
+        var headerPanel = createHeaderPanel();
+
+        var assetsDynamicLayout = new DynamicLayout {
+            Padding = 15,
+            Height = -1
         };
-
-        var subtitleLabel = new Label {
-            Text = "Choose a 3D Tile to import",
-            Font = new Font("Helvetica", 10)
-        };
-
-        var subtitleLabelPanel = new Panel {
-            Padding = new Padding(0, 0, 0, 10),
-            Content = subtitleLabel
-        };
-
-        var assetsStackLayout = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Spacing = 5,
-            Items = { }
-        }; 
+        assetsDynamicLayout.BeginVertical();
 
         foreach (CesiumAsset asset in assets) {
             if (asset.id == null) continue;
 
-            Label nameLabel = new Label {
-                Text = asset.name,
-                Font = new Font("Helvetica", 18, FontStyle.Bold)
+            var nameLabel = label(asset.name, 16, true);
+
+            var descriptionText = asset.description == null ? "No asset description provided." : asset.description;
+            var descriptionFontStyle = asset.description == null ? FontStyle.Italic : FontStyle.None;
+            var descriptionLabel = new Label {
+                Text = descriptionText,
+                Font = new Font("Helvetica", 11, descriptionFontStyle)
             };
 
-            Label descriptionLabel = null;
-            if (asset.description != null) {
-                descriptionLabel = new Label {
-                    Text = asset.description,
-                    Font = new Font("Helvetica", 10)
-                };
-            }
-
-            Label attributionLabel = null;
-            if (asset.attribution != null) {
-                attributionLabel = new Label {
-                    Text = asset.attribution,
-                    Font = new Font("Helvetica", 10)
-                };
-            }
-
-            Label idLabel = new Label {
-                Text = $"ID: {asset.id}",
-                Font = new Font("Helvetica", 10, FontStyle.Bold)
+            var attributionText = asset.attribution == null ? "No asset attribution provided." : asset.attribution;
+            var attributionFontStyle = asset.attribution == null ? FontStyle.Italic : FontStyle.None;
+            var attributionLabel = new Label {
+                Text = attributionText,
+                Font = new Font("Helvetica", 9, attributionFontStyle)
+            };
+            var attributionLabelPanel = new Panel {
+                Padding = new Padding(0, 10, 0, 0),
+                Content = attributionLabel
             };
 
-            Label dateLabel = null;
-            if (asset.dateAdded != null) {
-                dateLabel = new Label {
-                    Text = $"Date Added: {asset.dateAdded}",
-                    Font = new Font("Helvetica", 10, FontStyle.Bold)
-                };
-            }
+            var idLabel = label($"ID: {asset.id}", 10, true);
+
+            var dateText = asset.dateAdded == null ? "Date added: unknown" : $"Date added: {asset.dateAdded}";
+            var dateLabel = label(dateText, 10, true);
 
             StackLayout metadataStackLayout = new StackLayout {
                 Orientation = Orientation.Horizontal,
-                Spacing = 10,
+                Spacing = 30,
+                Padding = new Padding(0, 0, 0, 20),
                 Items = { idLabel, dateLabel }
             };
 
-            Button importButton = new Button{Text = "Import"};
+            Button importButton = new Button{Text = "Select"};
             importButton.Click += (sender, e) => {
                 Close(asset);
             };
 
-            var panel = new Panel {
-                Padding = new Padding(0, 0, 0, 10),
-                Content = new StackLayout {
-                    Padding = 30,
-                    Spacing = 10,
-                    Items = {
-                        nameLabel,
-                        metadataStackLayout,
-                        descriptionLabel,
-                        attributionLabel,
-                        importButton
-                    }
-                }
+            var importButtonDynamicLayout = new DynamicLayout {
+                Padding = new Padding(0, 10, 0, 0)
+            };
+            importButtonDynamicLayout.BeginHorizontal();
+            importButtonDynamicLayout.Add(null, true);
+            importButtonDynamicLayout.Add(importButton);
+            importButtonDynamicLayout.Add(null, true);
+            importButtonDynamicLayout.EndHorizontal();
+
+            var assetDynamicLayout = new DynamicLayout {
+                BackgroundColor = colourLighter,
+                Padding = 10,
+                Width = 0
+            };
+            assetDynamicLayout.BeginVertical();
+            assetDynamicLayout.Add(nameLabel);
+            assetDynamicLayout.Add(metadataStackLayout);
+            assetDynamicLayout.Add(descriptionLabel);
+            assetDynamicLayout.Add(attributionLabelPanel);
+            assetDynamicLayout.Add(importButtonDynamicLayout);
+            assetDynamicLayout.EndVertical();
+
+            var assetPanel = new Panel {
+                Padding = new Padding(0, 0, 0, 15),
+                Content = assetDynamicLayout
             };
 
-            assetsStackLayout.Items.Add(panel);
+            assetsDynamicLayout.Add(assetPanel, true, false);
         }
+
+        assetsDynamicLayout.Add(null, false, false); // TODO: why is there random blank space at the bottom of the Scrollable?
+
+        assetsDynamicLayout.EndVertical();
+
+        var assetsScrollable = new Scrollable {
+            BackgroundColor = colourDark,
+            Border = BorderType.None,
+            Content = assetsDynamicLayout
+        };
+        var assetsPanel = new Panel {
+            Padding = new Padding(20, 20, 20, 0),
+            Content = assetsScrollable
+        };
 
         AbortButton = new Button{Text = "Cancel"};
         AbortButton.Click += (sender, e) => Close(null);
 
-        Content = new StackLayout {
-            Padding = 30,
-            Spacing = 10,
+        var buttonPanel = new Panel {
+            BackgroundColor = colourLight,
+            Padding = 10,
+            Content = AbortButton
+        };
+
+        var buttonDynamicLayout = new DynamicLayout {
+            Padding = new Padding(0, 30, 0, 10)
+        };
+        buttonDynamicLayout.BeginHorizontal();
+        buttonDynamicLayout.Add(null, true);
+        buttonDynamicLayout.Add(buttonPanel);
+        buttonDynamicLayout.Add(null, true);
+        buttonDynamicLayout.EndHorizontal();
+
+        var dynamicLayout = new DynamicLayout {
+            BackgroundColor = colourDarker
+        };
+        dynamicLayout.BeginVertical();
+        dynamicLayout.Add(headerPanel, true);
+        dynamicLayout.Add(assetsPanel, true, true);
+        dynamicLayout.Add(buttonDynamicLayout);
+        dynamicLayout.EndVertical();
+
+        Content = dynamicLayout;
+    }
+
+    private Panel createHeaderPanel() {
+        var headerPanel = new Panel {
+            BackgroundColor = colourLight,
+            Padding = 20,
+            Width = 100000 // Surely there is a better way of doing this.
+        };
+
+        var titleLabel = label("Cesium ion assets", 18, true);
+        var subtitleLabel = label("These are the assets that you have access to with your Cesium ion account. Select which one you'd like to import.", 10);
+
+        headerPanel.Content = new StackLayout {
+            Orientation = Orientation.Vertical,
             Items = {
                 titleLabel,
-                subtitleLabelPanel,
-                new Scrollable {
-                    Content = assetsStackLayout,
-                    Size = new Size(1140, 500)
-                },
-                AbortButton
+                subtitleLabel
             }
+        };
+
+        return headerPanel;
+    }
+
+    private Label label(string text, int fontSize, bool bold = false) {
+        return new Label{
+            Text = text,
+            Font = new Font("Helvetica", fontSize, bold ? FontStyle.Bold : FontStyle.None)
         };
     }
 }
