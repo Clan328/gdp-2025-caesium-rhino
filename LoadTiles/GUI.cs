@@ -413,64 +413,72 @@ public class GDPDialog : Dialog<DialogResult> {
 
         var latitudeLabel = Styling.label("Latitude", 10);
         this.latitudeTextBox = new TextBox();
-        var latitudeStackLayout = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Items = { latitudeLabel, this.latitudeTextBox }
-        };
+        var latitudeDynamicLayout = new DynamicLayout();
+        latitudeDynamicLayout.BeginVertical();
+        latitudeDynamicLayout.Add(latitudeLabel);
+        latitudeDynamicLayout.Add(this.latitudeTextBox, true);
+        latitudeDynamicLayout.EndVertical();
 
         var longitudeLabel = Styling.label("Longitude", 10);
         this.longitudeTextBox = new TextBox();
-        var longitudeStackLayout = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Items = { longitudeLabel, this.longitudeTextBox }
-        };
+        var longitudeDynamicLayout = new DynamicLayout();
+        longitudeDynamicLayout.BeginVertical();
+        longitudeDynamicLayout.Add(longitudeLabel);
+        longitudeDynamicLayout.Add(this.longitudeTextBox, true);
+        longitudeDynamicLayout.EndVertical();
 
         var altitudeLabel = Styling.label("Altitude", 10);
         this.altitudeTextBox = new TextBox();
         this.altitudeTextBox.Text = "0";
         var altitudeTextBoxLabel = Styling.label("  metres", 9);
-        var altitudeTextBoxStackLayout = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Items = { this.altitudeTextBox, new StackLayoutItem(altitudeTextBoxLabel, VerticalAlignment.Center) }
-        };
-        var altitudeStackLayout = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Items = { altitudeLabel, altitudeTextBoxStackLayout }
-        };
+        var altitudeTextBoxDynamicLayout = new DynamicLayout();
+        altitudeTextBoxDynamicLayout.BeginHorizontal();
+        altitudeTextBoxDynamicLayout.Add(this.altitudeTextBox, true);
+        altitudeTextBoxDynamicLayout.Add(altitudeTextBoxLabel);
+        altitudeTextBoxDynamicLayout.EndHorizontal();
+        var altitudeDynamicLayout = new DynamicLayout();
+        altitudeDynamicLayout.BeginVertical();
+        altitudeDynamicLayout.Add(altitudeLabel);
+        altitudeDynamicLayout.Add(altitudeTextBoxDynamicLayout, true);
+        altitudeDynamicLayout.EndVertical();
 
         var radiusLabel = Styling.label("Radius", 10);
         this.radiusTextBox = new TextBox();
         this.radiusTextBox.Text = "200";
         var radiusTextBoxLabel = Styling.label("  metres", 9);
-        var radiusTextBoxStackLayout = new StackLayout {
-            Orientation = Orientation.Horizontal,
-            Items = { this.radiusTextBox, new StackLayoutItem(radiusTextBoxLabel, VerticalAlignment.Center) }
-        };
-        var radiusStackLayout = new StackLayout {
-            Orientation = Orientation.Vertical,
-            Items = { radiusLabel, radiusTextBoxStackLayout }
-        };
+        var radiusTextBoxDynamicLayout = new DynamicLayout();
+        radiusTextBoxDynamicLayout.BeginHorizontal();
+        radiusTextBoxDynamicLayout.Add(this.radiusTextBox, true);
+        radiusTextBoxDynamicLayout.Add(radiusTextBoxLabel);
+        radiusTextBoxDynamicLayout.EndHorizontal();
+        var radiusDynamicLayout = new DynamicLayout();
+        radiusDynamicLayout.BeginVertical();
+        radiusDynamicLayout.Add(radiusLabel);
+        radiusDynamicLayout.Add(radiusTextBoxDynamicLayout, true);
+        radiusDynamicLayout.EndVertical();
 
         TableLayout positionTableLayout = new TableLayout {
             Spacing = new Size(20, 20),
             Padding = new Padding(0, 20, 0, 0),
             Rows = {
-                new TableRow(latitudeStackLayout, longitudeStackLayout),
-                new TableRow(altitudeStackLayout, radiusStackLayout)
+                new TableRow(latitudeDynamicLayout, longitudeDynamicLayout),
+                new TableRow(altitudeDynamicLayout, radiusDynamicLayout)
             }
         };
 
-        StackLayout positionStackLayoutInner = new StackLayout {
-            Orientation = Orientation.Vertical,
+        var positionDynamicLayoutInner = new DynamicLayout {
             BackgroundColor = Styling.colourDark,
-            Padding = 10,
-            Items = { positionLabel, positionTableLayout }
+            Padding = 10
         };
+        positionDynamicLayoutInner.BeginVertical();
+        positionDynamicLayoutInner.Add(positionLabel);
+        positionDynamicLayoutInner.Add(positionTableLayout, true);
+        positionDynamicLayoutInner.EndVertical();
         var positionDynamicLayout = new DynamicLayout {
             Padding = new Padding(20, 20, 20, 0)
         };
         positionDynamicLayout.BeginHorizontal();
-        positionDynamicLayout.Add(positionStackLayoutInner);
+        positionDynamicLayout.Add(positionDynamicLayoutInner);
         positionDynamicLayout.EndHorizontal();
 
         return positionDynamicLayout;
