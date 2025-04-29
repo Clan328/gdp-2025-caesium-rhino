@@ -2,19 +2,23 @@ using System;
 using System.Collections.Generic;
 using Eto.Drawing;
 using Eto.Forms;
+using Rhino;
 
 namespace LoadTiles;
 
 public class MaskingDialog : Dialog<bool> {
     private MaskingCommand maskingCommand;
-    private DynamicLayout objectsDynamicLayout;
+    private RhinoDoc doc;
+    private Panel objectsPanel;
     private Dictionary<Guid, Panel> objectPanels;
-    public MaskingDialog(MaskingCommand maskingCommand) {
+    private Guid? highlightedObject = null;
+    public MaskingDialog(MaskingCommand maskingCommand, RhinoDoc doc) {
         Title = "Masking options";
         ClientSize = new Size(600, 400);
         Resizable = true;
         
         this.maskingCommand = maskingCommand;
+        this.doc = doc;
 
         Content = createDialogContent();
     }
@@ -70,19 +74,24 @@ public class MaskingDialog : Dialog<bool> {
         return dynamicLayout;
     }
 
-    private Panel createObjectsListPanel() {
-        this.objectPanels = new Dictionary<Guid, Panel>();
-
-        this.objectsDynamicLayout = new DynamicLayout {
+    private void updateObjectsList() {
+        var objectsDynamicLayout = new DynamicLayout {
             Padding = 15,
             Height = -1
         };
         objectsDynamicLayout.BeginVertical();
+        
+        if (this.objectPanels.Count == 0) {
+            var emptyLabel = new Label {
+                Text = "No masking is currently being performed.",
+                Font = new Font(Styling.fontName, 9, FontStyle.Italic)
+            };
+            objectsDynamicLayout.Add(emptyLabel);
+        }
 
-        foreach (Guid maskingObject in this.maskingCommand.maskingObjects) {
-            var objectPanel = createObjectPanel(maskingObject);
-            objectsDynamicLayout.Add(objectPanel, true, false);
-            this.objectPanels[maskingObject] = objectPanel;
+        foreach (var panelPair in this.objectPanels) {
+            var panel = panelPair.Value;
+            objectsDynamicLayout.Add(panel);
         }
 
         objectsDynamicLayout.EndVertical();
@@ -93,17 +102,41 @@ public class MaskingDialog : Dialog<bool> {
             ExpandContentHeight = false,
             Content = objectsDynamicLayout
         };
-        var objectsPanel = new Panel {
-            Padding = new Padding(20, 20, 20, 0),
-            Content = objectsScrollable
-        };
 
-        return objectsPanel;
+        this.objectsPanel.Content = objectsScrollable;
     }
 
-    private Panel createObjectPanel(Guid objectId) {
-        var colourPicker = new ColorPicker {
-            Value = Color.FromRgb(0xFF0000)
+    private Panel createObjectsListPanel() {
+        this.objectPanels = new Dictionary<Guid, Panel>();
+
+        foreach (Guid maskingObject in this.maskingCommand.maskingObjects) {
+            var objectPanel = createObjectPanel(maskingObject);
+            this.objectPanels[maskingObject] = objectPanel;
+        }
+
+        this.objectsPanel = new Panel {
+            Padding = new Padding(20, 20, 20, 0)
+        };
+
+        this.updateObjectsList();
+
+        return this.objectsPanel;
+    }
+
+    private void highlightObject(Guid objectId) {
+        if (this.highlightedObject != null) {
+            this.doc.Objects.FindId((Guid) this.highlightedObject).Highlight(false);
+        }
+        this.doc.Objects.FindId(objectId).Highlight(true);
+        this.highlightedObject = objectId;
+    }
+
+    private DynamicLayout createObjectPanel(Guid objectId) {
+        var highlightButton = new Button {
+            Text = "Highlight"
+        };
+        highlightButton.Click += (sender, e) => {
+            this.highlightObject(objectId);
         };
 
         string nameText = objectId.ToString();
@@ -129,8 +162,8 @@ public class MaskingDialog : Dialog<bool> {
         };
         deleteButton.Click += (sender, e) => {
             maskingCommand.maskingObjects.Remove(objectId);
-            this.objectsDynamicLayout.Remove(this.objectPanels[objectId]); // TODO: fix this
-            this.objectsDynamicLayout.Create();
+            this.objectPanels.Remove(objectId);
+            this.updateObjectsList();
         };
 
         var dynamicLayout = new DynamicLayout {
@@ -138,7 +171,7 @@ public class MaskingDialog : Dialog<bool> {
             Padding = 10
         };
         dynamicLayout.BeginHorizontal();
-        dynamicLayout.Add(colourPicker, false);
+        dynamicLayout.Add(highlightButton, false);
         dynamicLayout.Add(nameDynamicLayout, true);
         dynamicLayout.Add(renameButton, false);
         dynamicLayout.Add(deleteButton, false);
@@ -148,13 +181,16 @@ public class MaskingDialog : Dialog<bool> {
     }
 
     private DynamicLayout createButtonPanel() {
-        AbortButton = new Button{Text = "OK"};
-        AbortButton.Click += (sender, e) => Close(true);
+        var addButton = new Button{Text = "Add"};
+        addButton.Click += (sender, e) => {
+            Close(false);
+            this.maskingCommand.promptUserSelection(this.doc);
+        };
 
         var buttonPanel = new Panel {
             BackgroundColor = Styling.colourLight,
             Padding = 10,
-            Content = AbortButton
+            Content = addButton
         };
 
         var buttonDynamicLayout = new DynamicLayout {

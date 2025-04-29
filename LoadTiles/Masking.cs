@@ -28,17 +28,28 @@ public class MaskingCommand : Command {
         }
     }
 
-    protected override Result RunCommand(RhinoDoc doc, RunMode mode) {
+    public void openDialog(RhinoDoc doc) {
+        MaskingDialog maskingDialog = new MaskingDialog(this, doc);
+        maskingDialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+    }
+
+    public void promptUserSelection(RhinoDoc doc) {
         var objRef = getObjectFromUser();
-        if (objRef == null) return Result.Failure;
+        if (objRef == null) return;
 
         Result result = performMasking(doc, objRef.ObjectId);
 
-        if (result != Result.Success) return Result.Failure;
+        if (result != Result.Success) return;
 
         maskingObjects.Add(objRef.ObjectId);
 
-        return result;
+        this.openDialog(doc);
+    }
+
+    protected override Result RunCommand(RhinoDoc doc, RunMode mode) {
+        this.openDialog(doc);
+
+        return Result.Success;
     }
 
     private ObjRef? getObjectFromUser() {
