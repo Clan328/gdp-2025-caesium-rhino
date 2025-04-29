@@ -11,8 +11,7 @@ namespace LoadTiles
         private string? rootUrl, key, session;
         protected override string RootUrl => rootUrl ?? throw new InvalidOperationException("Root URL not set.");
         protected override string AssetId => "2275207";
-        private static readonly string baseUrl = "https://tile.googleapis.com/v1/3dtiles/root.json";
-        public TileLoaderGoogle() : base(baseUrl)
+        public TileLoaderGoogle()
         {
         }
 
@@ -27,6 +26,7 @@ namespace LoadTiles
                                    .ToString();
             // Extract key (which is a query parameter) from the URL
             key = HttpUtility.ParseQueryString(new Uri(urlWithKey).Query)["key"] ?? throw new InvalidOperationException("Key not found.");
+            string baseUrl = urlWithKey.Split("?")[0];
             // We make a call to the Google Maps API to get the session ID
             string response = FetchStringFromAPI(client, $"{baseUrl}?key={key}");
             Tileset tileset = Tileset.Deserialize(response, new Uri(baseUrl, UriKind.Absolute), Transform.Identity);

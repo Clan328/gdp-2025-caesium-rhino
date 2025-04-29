@@ -14,13 +14,24 @@ namespace LoadTiles
     public abstract class TileLoader
     {
         // For Cesium Ion 
-        private readonly HttpClient cesiumIonClient = new HttpClient { 
+        private readonly HttpClient cesiumIonClient = new HttpClient 
+        { 
             BaseAddress = new Uri("https://api.cesium.com") 
         };
         
         // For the chosen 3D Tiles API
-        protected readonly HttpClient client;
+        protected readonly HttpClient client = new HttpClient 
+        {            
+        };
+
+        /// <summary>
+        /// Root URL for the 3D Tiles API, to be called initially for each load.
+        /// </summary>
         protected abstract string RootUrl { get; }
+
+        /// <summary>
+        /// Cesium Ion asset ID for the specified 3D Tiles API.
+        /// </summary>
         protected abstract string AssetId { get; }
 
         /// <summary>
@@ -28,12 +39,8 @@ namespace LoadTiles
         /// </summary>
         protected abstract void InitApiParameters(string cesiumIonApiKey);
 
-        protected TileLoader(string clientBaseUrl)
+        protected TileLoader()
         {
-            // Initialise 3D Tiles API client with the base URL
-            client = new HttpClient { 
-                BaseAddress = new Uri(clientBaseUrl) 
-            };
         }
 
         /// <summary>
