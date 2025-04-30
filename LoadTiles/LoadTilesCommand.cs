@@ -84,7 +84,8 @@ namespace LoadTiles
             this.selectedAsset = result.selectedAsset;
             TileLoader tileLoader = selectedAsset.id switch {
                 2275207 => new TileLoaderGoogle(),
-                _ => throw new NotImplementedException("Asset ID not recognized.")
+                96188 => new TileLoaderCesium(),
+                _ => throw new NotImplementedException("Asset not implemented.")
             };
 
             // Keep track of which objects already exist in the project.

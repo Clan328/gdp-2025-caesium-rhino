@@ -99,24 +99,60 @@ public static class Helper {
         }
     }
 
+    private static double AngularDistance(double angle1, double angle2) {
+        double diff = angle1 - angle2;
+        while (diff > Math.PI) {
+            diff -= 2 * Math.PI;
+        }
+        while (diff < -Math.PI) {
+            diff += 2 * Math.PI;
+        }
+        return diff;
+    }
+
     /// <summary>
     /// Calculates the distance from a point to the nearest edge of a tile.
     /// If the point is inside the tile, the distance is 0.
-    /// Only implemented for tiles with a rectangular bounding box.
+    /// Only implemented for tiles with a rectangular or region bounding volume.
     /// </summary>
     public static double PointDistanceToTile(Point3d point, Tile tile) {
-        if (tile.BoundingVolume.Box == null) {
-            throw new NotImplementedException("Only rectangular bounding boxes are supported.");
+        if (tile.BoundingVolume.Box != null) 
+        {
+            TileBoundingBox box = tile.BoundingVolume.Box;
+            if (TileBoundingBox.IsInBox(box, point)) {
+                return 0.0;
+            } else {
+                Brep brepBox = box.AsBox().ToBrep();
+                Point3d boundaryPoint = brepBox.ClosestPoint(point);
+                (double lat1, double lon1, _) = EPSG4978ToLatLonRadians(point);
+                (double lat2, double lon2, _) = EPSG4978ToLatLonRadians(boundaryPoint);
+                return GroundDistance(lat1, lon1, lat2, lon2);
+            }
         }
-        TileBoundingBox box = tile.BoundingVolume.Box;
-        if (TileBoundingBox.IsInBox(box, point)) {
-            return 0.0;
-        } else {
-            Brep brepBox = box.AsBox().ToBrep();
-            Point3d boundaryPoint = brepBox.ClosestPoint(point);
+        else if (tile.BoundingVolume.Region != null)
+        {
+            BoundingRegion region = tile.BoundingVolume.Region;
+
             (double lat1, double lon1, _) = EPSG4978ToLatLonRadians(point);
-            (double lat2, double lon2, _) = EPSG4978ToLatLonRadians(boundaryPoint);
-            return GroundDistance(lat1, lon1, lat2, lon2);
+            // (lat2, lon2) is the closest point on the region to the point
+            double lat2 = 
+                (lat1 > region.North) ? region.North :
+                (lat1 < region.South) ? region.South : 
+                lat1;
+            double eastDiff = AngularDistance(region.East, lon1);
+            double westDiff = AngularDistance(region.West, lon1);
+            double lon2 =
+                (lon1 >= region.West && lon1 <= region.East) ? lon1 :
+                (region.West > region.East && (lon1 <= region.East || lon1 >= region.West)) ? lon1 :
+                (eastDiff < westDiff) ? region.East :
+                region.West;
+            if (lat1 == lat2 && lon1 == lon2) return 0.0; // Point is inside the region
+            else return GroundDistance(lat1, lon1, lat2, lon2);
         }
+        else
+        {
+            throw new NotImplementedException("Sphere bounding volumes are not supported yet.");
+        }
+
     }
 }

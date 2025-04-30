@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Rhino;
 using Rhino.DocObjects;
@@ -44,14 +46,22 @@ namespace LoadTiles
         }
 
         /// <summary>
-        /// Makes an API call to retrieve a GLB file
+        /// Makes an API call to retrieve a byte file
         /// </summary>
         /// <param name="client">Http client to make the API call</param>
         /// <param name="url">Link to the API</param>
-        /// <returns>Byte array representing the GLB file</returns>
-        protected byte[] FetchGLBFromAPI(HttpClient client, string url) 
+        /// <returns>Byte array representing the file</returns>
+        protected static byte[] FetchFileFromAPI(HttpClient client, string url) 
         {
-            return client.GetByteArrayAsync(url).Result;
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            if (response.Content.Headers.ContentEncoding.Contains("gzip"))
+            {   // Decompress the response if it is gzipped
+                using var decompressedStream = new GZipStream(response.Content.ReadAsStreamAsync().Result, CompressionMode.Decompress);
+                using var memoryStream = new MemoryStream();
+                decompressedStream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
+            }
+            else return response.Content.ReadAsByteArrayAsync().Result;
         }
 
         /// <summary>
@@ -60,9 +70,16 @@ namespace LoadTiles
         /// <param name="client">Http client to make the API call</param>
         /// <param name="url">Link to the API</param>
         /// <returns>Response from the API as a string</returns>
-        protected string FetchStringFromAPI(HttpClient client, string url) 
+        protected static string FetchStringFromAPI(HttpClient client, string url) 
         {
-            return client.GetStringAsync(url).Result;
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            if (response.Content.Headers.ContentEncoding.Contains("gzip"))
+            {   // Decompress the response if it is gzipped
+                using var decompressedStream = new GZipStream(response.Content.ReadAsStreamAsync().Result, CompressionMode.Decompress);
+                using var reader = new StreamReader(decompressedStream);
+                return reader.ReadToEnd();
+            }
+            else return response.Content.ReadAsStringAsync().Result;
         }
 
         /// <summary>
@@ -96,17 +113,77 @@ namespace LoadTiles
         /// </summary>
         /// <param name="doc">Active document</param>
         /// <param name="tile">Tile to load</param>
-        /// <returns>Whether the import was successful.</returns>
         private bool LoadGLB(RhinoDoc doc, Tile tile, Point3d targetPoint) 
         {
             string glbLink = tile.Contents[0].Uri.ToString();
             // Check that the link is indeed a GLB
             string[] linkparts = glbLink.Split('.');
-            if (linkparts[linkparts.Length - 1] != "glb") return false;
+            if (linkparts[linkparts.Length - 1] != "glb") throw new InvalidOperationException("Link is not a GLB file.");
             // Load the GLB file from the API
-            byte[] glbBytes = FetchGLBFromAPI(client, FormUrl(glbLink));
+            byte[] glbBytes = FetchFileFromAPI(client, FormUrl(glbLink));
             // Store the GLB file in a temporary location
             // This is necessary because the Rhino GLTF reader does not support loading from a byte array
+            string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
+            File.WriteAllBytes(tempPath, glbBytes);
+            Console.WriteLine(Helper.PointDistanceToBoundingVolume(targetPoint, tile.BoundingVolume));
+            // Read GLB from the temporary file and import it into the Rhino document
+            return doc.Import(tempPath);
+        }
+
+        private bool LoadB3DM(RhinoDoc doc, Tile tile, Point3d targetPoint) 
+        {
+            string b3dmLink = tile.Contents[0].Uri.ToString();
+            // Check that the link is indeed a B3DM
+            string[] linkparts = b3dmLink.Split('.');
+            if (linkparts[linkparts.Length - 1] != "b3dm") throw new InvalidOperationException("Link is not a B3DM file.");
+            // Load the B3DM file from the API
+            byte[] b3dmBytes = FetchFileFromAPI(client, FormUrl(b3dmLink));
+
+            // Extract the GLB data from the B3DM file:
+            // 0. Initial size checks
+            const long HEADER_SIZE = 28; // B3DM header size
+            if (b3dmBytes == null) throw new InvalidDataException("B3DM file is empty.");
+            if (b3dmBytes.Length < HEADER_SIZE) throw new InvalidDataException("B3DM file is missing header.");
+
+            using MemoryStream ms = new MemoryStream(b3dmBytes);
+            using BinaryReader reader = new BinaryReader(ms, Encoding.ASCII, false);
+            // 1. Read Magic ('b3dm')
+            char[] magic = reader.ReadChars(4);
+            string magicStr = new string(magic);
+            if (magicStr != "b3dm") throw new InvalidDataException($"Invalid B3DM magic string. Expected 'b3dm', got '{magicStr}'.");
+
+            // 2. Read Version
+            uint version = reader.ReadUInt32();
+            if (version != 1) Console.WriteLine($"Warning: B3DM version is {version}, expected 1. Parsing proceeds assuming version 1 layout.");
+
+            // 3. Read Total Byte Length
+            uint totalByteLength = reader.ReadUInt32();
+            if (totalByteLength != b3dmBytes.Length) throw new InvalidDataException($"B3DM header byteLength ({totalByteLength}) does not match input data length ({b3dmBytes.Length}).");
+
+            // 4. Read Table Lengths
+            uint featureTableJsonByteLength = reader.ReadUInt32();
+            uint featureTableBinaryByteLength = reader.ReadUInt32();
+            uint batchTableJsonByteLength = reader.ReadUInt32();
+            uint batchTableBinaryByteLength = reader.ReadUInt32();
+
+            // 5. Calculate GLB/glTF Start Position
+            // It starts immediately after the header and all the tables.
+            long glbStartPosition = HEADER_SIZE +
+                                    featureTableJsonByteLength +
+                                    featureTableBinaryByteLength +
+                                    batchTableJsonByteLength +
+                                    batchTableBinaryByteLength;
+            if (glbStartPosition > b3dmBytes.Length) throw new InvalidDataException("Calculated GLB start position exceeds B3DM total length based on table lengths.");
+
+            // 6. Calculate GLB/glTF Length
+            long glbLength = totalByteLength - glbStartPosition;
+            if (glbLength == 0) return false; // No GLB data to extract
+
+            // 7. Extract the GLB/glTF data
+            byte[] glbBytes = new byte[glbLength];
+            Array.Copy(b3dmBytes, glbStartPosition, glbBytes, 0, glbLength);
+
+            // Store the GLB file in a temporary location
             string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
             File.WriteAllBytes(tempPath, glbBytes);
             Console.WriteLine(Helper.PointDistanceToBoundingVolume(targetPoint, tile.BoundingVolume));
@@ -162,13 +239,25 @@ namespace LoadTiles
             if (shouldLoadTile) {
                 string link = tile.Contents[0].Uri.ToString();
                 string[] linkparts = link.Split('.');
-                if (linkparts[linkparts.Length - 1] == "glb") {  // Content of this tile is a GLB file
+                string filetype = linkparts[linkparts.Length - 1];
+                if (filetype == "glb") 
+                {   // Content of this tile is a GLB file
                     if (shouldLoadObjects) LoadGLB(doc, tile, targetPoint);
                 }
-                else {   // Content of this tile is a JSON link (make a further API call)
+                else if (filetype == "b3dm")
+                {   // Content of this tile is a B3DM file
+                    if (shouldLoadObjects) LoadB3DM(doc, tile, targetPoint);
+                }
+                else if (filetype == "json") 
+                {   // Content of this tile is a JSON link (make a further API call)
                     string response = FetchStringFromAPI(client, FormUrl(link));
-                    Tile nextTile = Tileset.Deserialize(response, new Uri(link, UriKind.Absolute), Transform.Identity).Root;  // TODO: Change transform
+                    Tile nextTile = Tileset.Deserialize(response, new Uri(link, UriKind.Absolute), Transform.Identity).Root;
+                    Console.WriteLine(link);
                     TraverseTileTree(doc, nextTile, targetPoint, renderDistance);
+                }
+                else
+                {
+                    throw new NotImplementedException($"File type {filetype} not supported.");
                 }
             }
             if (shouldTraverse) {
