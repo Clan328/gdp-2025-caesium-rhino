@@ -252,7 +252,6 @@ namespace LoadTiles
                 {   // Content of this tile is a JSON link (make a further API call)
                     string response = FetchStringFromAPI(client, FormUrl(link));
                     Tile nextTile = Tileset.Deserialize(response, new Uri(link, UriKind.Absolute), Transform.Identity).Root;
-                    Console.WriteLine(link);
                     TraverseTileTree(doc, nextTile, targetPoint, renderDistance);
                 }
                 else
