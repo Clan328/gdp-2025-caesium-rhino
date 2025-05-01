@@ -1,0 +1,7 @@
+---
+name: cesiumion
+version: 1.0
+authors:
+  - Zoe Stafford, Skye Yi-Hardie, Patrick Guan, Hugo Dominguez Santana, Christopher Morson, Dylan Heydon-Matterface
+description: Integrate Cesium Ion 3D Tiles into Rhino3D
+url: https://github.com/Z-snails/gdp-2025-caesium-rhino
