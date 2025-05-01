@@ -116,7 +116,7 @@ public class GDPHelpDialog : Dialog<bool> {
         };
 
         var longTextLabel = Styling.label(
-            "This plugin has the ability to mask out some of the data imported. You can do this by adding an object to your project to act as the bounds for the masking, and then running the \"Mask\" command and selecting the object. This is saved when you save your project, so that it's simple to perform the same masking again the next time you open the file. If you don't want the masking to be re-applied, simply deselect the option at the bottom of the window.",
+            "This plugin has the ability to mask out some of the data imported. You can do this by adding an object to your project to act as the bounds for the masking, and then running the \"Mask\" command to manage the masking objects in your current project. This is saved when you save your project, so that it's simple to perform the same masking again the next time you open the file. You can rename these masking objects to make them easier to manage, and remove them if they're no longer needed.",
             9
         );
 

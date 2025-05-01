@@ -139,7 +139,11 @@ public class MaskingDialog : Dialog<bool> {
             this.highlightObject(objectId);
         };
 
-        string nameText = objectId.ToString();
+        int index = maskingCommand.maskingObjects.IndexOf(objectId);
+        string nameText = "No name";
+        if (maskingCommand.maskingObjectNames[index] != "") {
+            nameText = maskingCommand.maskingObjectNames[index];
+        }
 
         var nameLabel = Styling.label(nameText, 10);
         var guidLabel = new Label {
@@ -156,6 +160,19 @@ public class MaskingDialog : Dialog<bool> {
 
         var renameButton = new Button {
             Text = "Rename"
+        };
+        renameButton.Click += (sender, e) => {
+            TextInputDialog textInputWindow = new TextInputDialog(
+                "Rename",
+                "Enter a new name for this object",
+                nameText
+            );
+            string? result = textInputWindow.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+            if (result == null) return;
+            int index = maskingCommand.maskingObjects.IndexOf(objectId);
+            maskingCommand.maskingObjectNames[index] = result;
+            this.objectPanels[objectId] = createObjectPanel(objectId);
+            this.updateObjectsList();
         };
         var deleteButton = new Button {
             Text = "Remove"

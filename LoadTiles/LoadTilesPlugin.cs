@@ -71,6 +71,8 @@ namespace LoadTiles
             if (maskingCommand != null) {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < maskingCommand.maskingObjects.Count; i++) {
+                    sb.Append(maskingCommand.maskingObjectNames[i]);
+                    sb.Append(":");
                     sb.Append(maskingCommand.maskingObjects[i]);
                     if (i < maskingCommand.maskingObjects.Count - 1) sb.Append(",");
                 }

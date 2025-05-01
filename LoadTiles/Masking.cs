@@ -14,6 +14,7 @@ public class MaskingCommand : Command {
     public override string EnglishName => "Mask";
 
     public List<Guid> maskingObjects = new List<Guid>();
+    public List<string> maskingObjectNames = new List<string>();
 
     public string maskingDataFromFile = "";
 
@@ -22,9 +23,20 @@ public class MaskingCommand : Command {
 
         string[] guids = maskingDataFromFile.Split(",");
         foreach (string guidString in guids) {
-            Guid guid = Guid.Parse(guidString);
+            Guid guid;
+            string name = "";
+            if (guidString.IndexOf(":") == -1) {
+                guid = Guid.Parse(guidString);
+            } else {
+                string[] segments = maskingDataFromFile.Split(":");
+                name = segments[0];
+                guid = Guid.Parse(segments[1]);
+            }
             Result result = performMasking(doc, guid);
-            if (result == Result.Success) maskingObjects.Add(guid);
+            if (result == Result.Success) {
+                maskingObjects.Add(guid);
+                maskingObjectNames.Add(name);
+            }
         }
     }
 
@@ -42,6 +54,7 @@ public class MaskingCommand : Command {
         if (result != Result.Success) return;
 
         maskingObjects.Add(objRef.ObjectId);
+        maskingObjectNames.Add("");
 
         this.openDialog(doc);
     }

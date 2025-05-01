@@ -66,9 +66,7 @@ namespace LoadTiles
         {
             RhinoApp.WriteLine("Fetching...");
 
-            bool maskingDataLoadedFromFile = hasMaskingDataBeenFound();
-
-            GDPDialog dialog = new GDPDialog(maskingDataLoadedFromFile);
+            GDPDialog dialog = new GDPDialog();
             if (this.locationInputted) {
                 dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance, this.selectedAsset);
             }
@@ -126,7 +124,7 @@ namespace LoadTiles
 
             RhinoApp.WriteLine("Tiles loaded.");
 
-            if (result.applyPreviousMasking && maskingDataLoadedFromFile) {
+            if (hasMaskingDataBeenFound()) {
                 RhinoApp.WriteLine("Applying previous masking...");
                 reapplyMaskingFromFile(doc);
                 RhinoApp.WriteLine("Previous masking has been applied.");
