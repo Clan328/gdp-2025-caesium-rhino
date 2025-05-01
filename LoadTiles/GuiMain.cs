@@ -97,38 +97,19 @@ public class GDPDialog : Dialog<DialogResult> {
         var authLabel = Styling.label("Authentication", 12);
 
         string loggedInText = "You are logged in.";
-        string loggedOutText = "You are logged out.";
 
-        var loggedInLabel = Styling.label(AuthSession.IsLoggedIn ? loggedInText : loggedOutText, 10);
+        var loggedInLabel = Styling.label(loggedInText, 10);
         var loggedInLabelPanel = new Panel {
             Padding = new Padding(0, 0, 30, 0),
             Content = loggedInLabel
         };
 
-        this.authButton = new Button{Text = AuthSession.IsLoggedIn ? "Log out" : "Log in"};
+        this.authButton = new Button{Text = "Log out"};
         this.authButton.Click += (sender, e) => {
-            if (AuthSession.IsLoggedIn)
-            {
-                // Log out the user
-                AuthSession.Logout();
-                MessageBox.Show("Logging out...");
-                authButton.Text = "Log in";
-                loggedInLabel.Text = loggedOutText;
-                return;
-            }
-
-            string? key = AuthSession.Login();
-
-            if (AuthSession.IsLoggedIn)
-            {
-                MessageBox.Show("Authentication successful!");
-                authButton.Text = "Log out";
-                loggedInLabel.Text = loggedInText;
-            }
-            else
-            {
-                MessageBox.Show("Authentication failed. Please try again.");
-            }
+            // Log out the user
+            AuthSession.Logout();
+            MessageBox.Show("Logged out successfully!");
+            Close(null);
         };
 
         var loggedInStatusDynamicLayout = new DynamicLayout {
@@ -349,8 +330,10 @@ public class GDPDialog : Dialog<DialogResult> {
     }
 
     private void selectNewModel() {
-        string? key = AuthSession.Login();
-        if (!AuthSession.IsLoggedIn) return;
+        if (!AuthSession.IsLoggedIn) {
+            // TODO: Throw error; this should not happen
+            return;
+        }
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthSession.CesiumAccessToken);
         string json = Task.Run(() => client.GetStringAsync("https://api.cesium.com/v1/assets?type=3DTILES").Result).GetAwaiter().GetResult();

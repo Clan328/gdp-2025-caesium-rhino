@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using Rhino;
 using Rhino.DocObjects;
+using Rhino.PlugIns;
+using CesiumAuthentication;
+using System.Threading.Tasks;
 
 namespace LoadTiles
 {
@@ -22,6 +25,11 @@ namespace LoadTiles
         public LoadTilesPlugin()
         {
             Instance = this;
+        }
+
+        protected override LoadReturnCode OnLoad(ref string errorMessage) {
+            Task.Factory.StartNew(() => AuthSession.ListenCode($"http://127.0.0.1:{AuthSession.PORT}/"));
+            return LoadReturnCode.Success;
         }
 
         /// <summary>
