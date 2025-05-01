@@ -6,9 +6,7 @@ In Rhino's command line (which should be positioned near the top of the window),
 
 You will need a Cesium Ion access token, which you can configure [here](https://ion.cesium.com/tokens).
 
-When prompted, enter the longitude and latitude of where you want to load. Currently the option entered for model does not affect the source for the tiles.
-
-For convenience, you should create a `.env` file in this root directory storing your API query parameters for Google Maps' API. More details in the comment in the `RunCommand` method in `LoadTiles/LoadTilesCommand.cs`.
+When prompted, enter the longitude and latitude of where you want to load.
 
 ## LoadTiles/sampletileset.json
 This is a sample JSON response from Google Maps 3D tiles - to test (and save on API calls!)
