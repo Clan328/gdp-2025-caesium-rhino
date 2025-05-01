@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TilesData", "TilesData\TilesData.csproj", "{DFB94E6A-045B-4C86-976C-08E4ADBB8603}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TilesDataTest", "TilesDataTest\TilesDataTest.csproj", "{C6AF17FD-DB39-4A6B-A4CD-71653466EB32}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoadTiles", "LoadTiles\LoadTiles.csproj", "{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}"
 EndProject
 Global
@@ -19,10 +17,6 @@ Global
 		{DFB94E6A-045B-4C86-976C-08E4ADBB8603}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DFB94E6A-045B-4C86-976C-08E4ADBB8603}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DFB94E6A-045B-4C86-976C-08E4ADBB8603}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C6AF17FD-DB39-4A6B-A4CD-71653466EB32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C6AF17FD-DB39-4A6B-A4CD-71653466EB32}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C6AF17FD-DB39-4A6B-A4CD-71653466EB32}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C6AF17FD-DB39-4A6B-A4CD-71653466EB32}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF0C6A2D-8312-40D4-8FCF-2A64EC60DD48}.Release|Any CPU.ActiveCfg = Release|Any CPU
