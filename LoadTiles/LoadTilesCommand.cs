@@ -4,6 +4,11 @@ using System;
 using Rhino.Geometry;
 using System.Collections.Generic;
 using Rhino.DocObjects;
+using CesiumAuthentication;
+using MessageBox = Eto.Forms.MessageBox;
+using MessageBoxButtons = Eto.Forms.MessageBoxButtons;
+using MessageBoxType = Eto.Forms.MessageBoxType;
+using MessageBoxDefaultButton = Eto.Forms.MessageBoxDefaultButton;
 
 namespace LoadTiles
 {
@@ -64,6 +69,15 @@ namespace LoadTiles
         /// </summary>
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
+            if (!AuthSession.IsLoggedIn) {
+                Eto.Forms.DialogResult res = MessageBox.Show("You need to be logged in to Cesium Ion", MessageBoxButtons.OKCancel, MessageBoxType.Question, MessageBoxDefaultButton.OK);
+
+                if (res == Eto.Forms.DialogResult.Ok) {
+                    AuthSession.Login(true);
+                }
+                return Result.Cancel;
+            }
+
             RhinoApp.WriteLine("Fetching...");
 
             GDPDialog dialog = new GDPDialog();

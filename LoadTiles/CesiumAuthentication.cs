@@ -12,6 +12,7 @@ using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Text.Json;
 using LoadTiles;
+using MessageBox = Eto.Forms.MessageBox;
 
 namespace CesiumAuthentication
 {
@@ -28,53 +29,45 @@ namespace CesiumAuthentication
         public static bool IsLoggedIn => !string.IsNullOrEmpty(CesiumAccessToken);
 
         private const string CLIENT_ID = "1108"; // ID of OAuth application; TODO: Move this to config file
-        
+        private const string CLIENT_ID_FETCH = "1143";
+
         private static readonly HttpClient client = new HttpClient();
         private static readonly IPEndPoint DefaultLoopbackEndpoint = new IPEndPoint(IPAddress.Loopback, port: 0);
+        private static string STATE = GenerateState();
+        public static int PORT = GetAvailablePort();
+
+        private const string RESPONSE_HTML = @"
+            <!doctype html>
+            <html>
+            <head>
+            <meta charset=""utf-8"">
+            <title>Rhinoceros</title>
+            <style>
+                @keyframes fadeIn {
+                    0% {opacity: 0.1;}
+                    100% {opacity: 1;}
+                }
+
+                .fadeIn {
+                    animation-duration: 5s;
+                        animation-name: fadeIn;
+                }
+            </style>
+            </head>
+            <body style=""text-align: center; font-family: Lato, 'Helvetica Neue', Helvetica, Arial, sans-serif;"">
+                <div><img src=""https://elisapi.mcneel.com/media/2"" alt=""Rhinoceros"" style=""width: 256px; height: 256px;"" class=""fadeIn""></div>
+                <p>Login completed. Please go back to Rhino.</p>
+            </body>
+            </html>
+        ";
 
         // Logins user, or returns current api key if they are already logged in
-        public static string? Login() {
-            if (IsLoggedIn) return CesiumAccessToken;
-
-            int port = GetAvailablePort();
-
-            string state = GenerateState();
-
+        public static void Login(bool fetchRedirect=false) {
             Process.Start(new ProcessStartInfo
             {
-                FileName = $"https://ion.cesium.com/oauth?response_type=code&client_id={CLIENT_ID}&redirect_uri=http://127.0.0.1:{port}&scope=assets:read assets:list&state={state}",
+                FileName = $"https://ion.cesium.com/oauth?response_type=code&client_id={(fetchRedirect? CLIENT_ID_FETCH : CLIENT_ID)}&redirect_uri=http://127.0.0.1:{PORT}{(fetchRedirect? "/fetch/" : "")}&scope=assets:read assets:list&state={STATE}",
                 UseShellExecute = true
             });
-
-            string? code = ListenCode($"http://127.0.0.1:{port}/", state);
-
-            if (code == null) {
-                // TODO: Throw error
-                return null;
-            }
-
-            Dictionary<string, string> values = new Dictionary<string, string>
-            {
-                { "grant_type", "authorization_code" },
-                { "client_id", CLIENT_ID },
-                { "code", code },
-                { "redirect_uri",  $"http://localhost:{port}"}
-            };
-
-            var content = new FormUrlEncodedContent(values);
-            HttpResponseMessage response = Task.Run(() => client.PostAsync("https://api.cesium.com/oauth/token", content)).GetAwaiter().GetResult();
-            
-            if (!response.IsSuccessStatusCode) {
-                // TODO: Throw error based on code
-                return null;
-            }
-            
-            string responseString = Task.Run(() => response.Content.ReadAsStringAsync()).GetAwaiter().GetResult();
-
-            var responseValues = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString);
-            
-            CesiumAccessToken = responseValues["access_token"];
-            return CesiumAccessToken;
         }
 
         // Logs out the user, returns true if the user was logged in before
@@ -86,7 +79,7 @@ namespace CesiumAuthentication
             return false;
         }
 
-        private static string? ListenCode(string prefix, string requiredState)
+        public static void ListenCode(string prefix)
         {
             // TODO: Error handling for the following cases:
             //       - If user closes auth website, rhino will freeze forever
@@ -95,7 +88,7 @@ namespace CesiumAuthentication
             if (!HttpListener.IsSupported)
             {
                 Console.WriteLine ("HttpListener class is not supported by OS.");
-                return null;
+                return;
             }
 
             HttpListener listener = new HttpListener();
@@ -104,31 +97,71 @@ namespace CesiumAuthentication
             listener.Start();
             Console.WriteLine("Listening...");
             // The GetContext method freezes Rhino while waiting for a request.
-            HttpListenerContext context = listener.GetContext();
-            HttpListenerRequest request = context.Request;
+            while (true) {
+                HttpListenerContext context = listener.GetContext();
+                HttpListenerRequest request = context.Request;
 
-            NameValueCollection query = HttpUtility.ParseQueryString(request.Url.Query);
+                NameValueCollection query = HttpUtility.ParseQueryString(request.Url.Query);
 
-            string code = query.Get("code");
-            string? state = query.Get("state");
+                string? code = query.Get("code");
+                string? state = query.Get("state");
+                
+                bool fetchRedirect = request.RawUrl.StartsWith("/fetch/");
 
-            if (state == null || state != requiredState) {
-                // This means we are being attacked
-                return null;
+                if (state == null || state != STATE) {
+                    // This means we are being attacked
+                    continue;
+                }
+
+                HttpListenerResponse listenerResponse = context.Response;
+                string listenerResponseString = RESPONSE_HTML;
+                byte[] buffer = System.Text.Encoding.UTF8.GetBytes(listenerResponseString);
+
+                listenerResponse.ContentLength64 = buffer.Length;
+                System.IO.Stream output = listenerResponse.OutputStream;
+                output.Write(buffer,0,buffer.Length);
+                output.Close();
+
+                if (code == null) {
+                    // TODO: Throw error
+                    continue;
+                }
+
+                Dictionary<string, string> values = new Dictionary<string, string>
+                {
+                    { "grant_type", "authorization_code" },
+                    { "client_id", (fetchRedirect? CLIENT_ID_FETCH : CLIENT_ID) },
+                    { "code", code },
+                    { "redirect_uri",  $"http://localhost:{PORT}{(fetchRedirect? "/fetch/" : "")}"}
+                };
+
+                var content = new FormUrlEncodedContent(values);
+                HttpResponseMessage response = Task.Run(() => client.PostAsync("https://api.cesium.com/oauth/token", content)).GetAwaiter().GetResult();
+                
+                if (!response.IsSuccessStatusCode) {
+                    // TODO: Throw error based on code
+                    continue;
+                }
+                
+                string responseString = Task.Run(() => response.Content.ReadAsStringAsync()).GetAwaiter().GetResult();
+
+                var responseValues = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString);
+                
+                CesiumAccessToken = responseValues["access_token"];
+
+                if (IsLoggedIn) {
+                    RhinoApp.InvokeOnUiThread(new Action(() => {
+                        MessageBox.Show("Authentication successful!");
+                        if (fetchRedirect) {
+                            RhinoApp.RunScript("Fetch", false);
+                        }
+                    }));
+
+                    RhinoApp.WriteLine("Authentication successful!");
+                }
             }
 
-            HttpListenerResponse response = context.Response;
-            string responseString = File.ReadAllText("index.html");
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
-
-            response.ContentLength64 = buffer.Length;
-            System.IO.Stream output = response.OutputStream;
-            output.Write(buffer,0,buffer.Length);
-
-            output.Close();
             listener.Stop();
-
-            return code;
         }
 
         public static int GetAvailablePort()
@@ -168,6 +201,7 @@ namespace CesiumAuthentication
 
             AuthSession.Logout();
 
+            MessageBox.Show("Logged out successfully!");
             RhinoApp.WriteLine("Logged out successfully!");
 
             return Result.Success;
@@ -187,10 +221,7 @@ namespace CesiumAuthentication
         {
             RhinoApp.WriteLine("Authenticating...");
 
-            string? key = AuthSession.Login();
-            if (!AuthSession.IsLoggedIn) return Result.Failure;
-
-            RhinoApp.WriteLine("Authentication successful!");
+            AuthSession.Login();
 
             return Result.Success;
         }
