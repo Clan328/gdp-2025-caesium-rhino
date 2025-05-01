@@ -27,7 +27,7 @@ public class MaskingDialog : Dialog<bool> {
         var headerPanel = Styling.createHeaderPanel(
             "Masking",
             "How do you want to mask away certain portions of the imported data?",
-            false // TODO: implement help for this?
+            true
         );
         var descriptionTextDynamicLayout = createDescriptionTextPanel();
         var objectsListDynamicLayout = createObjectsListPanel();

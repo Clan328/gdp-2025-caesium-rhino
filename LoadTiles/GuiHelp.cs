@@ -160,3 +160,118 @@ public class GDPHelpDialog : Dialog<bool> {
         return dynamicLayout;
     }
 }
+
+public class MaskingHelpDialog : Dialog<bool> {
+    public MaskingHelpDialog() {
+        Title = "Help";
+        ClientSize = new Size(500, 450);
+
+        Content = createDialogContent();
+    }
+
+    private DynamicLayout createDialogContent() {
+        var headerPanel = Styling.createHeaderPanel(
+            "Help",
+            "How to use the masking feature",
+            false
+        );
+        var addTextDynamicLayout = createAddTextPanel();
+        var modifyTextDynamicLayout = createModifyTextPanel();
+        var buttonDynamicLayout = createButtonPanel();
+
+        var dynamicLayout = new DynamicLayout {
+            BackgroundColor = Styling.colourDarker
+        };
+        dynamicLayout.BeginVertical();
+        dynamicLayout.Add(headerPanel, true);
+        dynamicLayout.Add(addTextDynamicLayout, true);
+        dynamicLayout.Add(modifyTextDynamicLayout, true);
+        dynamicLayout.Add(buttonDynamicLayout, true);
+        dynamicLayout.Add(null, true);
+        dynamicLayout.EndVertical();
+
+        return dynamicLayout;
+    }
+
+    private DynamicLayout createAddTextPanel() {
+        var titleLabel = Styling.label("Adding objects", 12);
+        var titleLabelPanel = new Panel {
+            Padding = new Padding(0, 0, 0, 10),
+            Content = titleLabel
+        };
+
+        var longTextLabel = Styling.label(
+            "To perform masking, you first need to add a masking object. Click the \"Add\" button at the bottom of the window, which will take you back to Rhino, at which point you can select an object. All the imported model data within the bounds of this object will be masked away. It might be helpful to put this masking object in a separate layer which is invisible, so that it doesn't interfere with the rest of your project.",
+            9
+        );
+        
+        var dynamicLayoutInner = new DynamicLayout {
+            BackgroundColor = Styling.colourDark,
+            Padding = 10
+        };
+        dynamicLayoutInner.BeginVertical();
+        dynamicLayoutInner.Add(titleLabelPanel, true);
+        dynamicLayoutInner.Add(longTextLabel, true);
+        dynamicLayoutInner.EndVertical();
+        var dynamicLayout = new DynamicLayout {
+            Padding = new Padding(20, 20, 20, 0)
+        };
+        dynamicLayout.BeginHorizontal();
+        dynamicLayout.Add(dynamicLayoutInner);
+        dynamicLayout.EndHorizontal();
+
+        return dynamicLayout;
+    }
+
+    private DynamicLayout createModifyTextPanel() {
+        var titleLabel = Styling.label("Modifying objects", 12);
+        var titleLabelPanel = new Panel {
+            Padding = new Padding(0, 0, 0, 10),
+            Content = titleLabel
+        };
+
+        var longTextLabel = Styling.label(
+            "You can rename your masking objects, in order to keep track of which is which. You can also remove any masking objects that you no longer need. If you lose track of which object in the list refers to which object in the project, you can choose to highlight the object, which will show up in Rhino as a yellow outline.",
+            9
+        );
+        
+        var dynamicLayoutInner = new DynamicLayout {
+            BackgroundColor = Styling.colourDark,
+            Padding = 10
+        };
+        dynamicLayoutInner.BeginVertical();
+        dynamicLayoutInner.Add(titleLabelPanel, true);
+        dynamicLayoutInner.Add(longTextLabel, true);
+        dynamicLayoutInner.EndVertical();
+        var dynamicLayout = new DynamicLayout {
+            Padding = new Padding(20, 20, 20, 0)
+        };
+        dynamicLayout.BeginHorizontal();
+        dynamicLayout.Add(dynamicLayoutInner);
+        dynamicLayout.EndHorizontal();
+
+        return dynamicLayout;
+    }
+
+    private DynamicLayout createButtonPanel() {
+        AbortButton = new Button{Text = "OK"};
+        AbortButton.Click += (sender, e) => Close(true);
+
+        var buttonPanel = new Panel {
+            BackgroundColor = Styling.colourLight,
+            Padding = 10,
+            Content = AbortButton
+        };
+
+        var dynamicLayout = new DynamicLayout {
+            Padding = new Padding(0, 30, 0, 10)
+        };
+        dynamicLayout.BeginHorizontal();
+        dynamicLayout.Add(null, true);
+        dynamicLayout.Add(buttonPanel);
+        dynamicLayout.Add(null, true);
+        dynamicLayout.EndHorizontal();
+
+        return dynamicLayout;
+    }
+}

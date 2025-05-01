@@ -34,6 +34,11 @@ public class Styling {
                     GDPHelpDialog dialog = new GDPHelpDialog();
                     dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
                 };
+            } else if (title == "Masking") {
+                helpButton.Click += (sender, e) => {
+                    MaskingHelpDialog dialog = new MaskingHelpDialog();
+                    dialog.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+                };
             }
 
             var buttonDynamicLayout = new DynamicLayout();
