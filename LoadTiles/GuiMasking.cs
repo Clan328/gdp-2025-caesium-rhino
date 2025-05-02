@@ -53,6 +53,8 @@ public class MaskingDialog : Dialog<bool> {
         );
         var boldTextLabel = new Label {
             Text = "Any changes made here will be reflected the next time any data is imported.",
+            TextAlignment = TextAlignment.Left,
+            TextColor = Colors.Black,
             Font = new Font(Styling.fontName, 9, FontStyle.Bold)
         };
 
@@ -84,6 +86,8 @@ public class MaskingDialog : Dialog<bool> {
         if (this.objectPanels.Count == 0) {
             var emptyLabel = new Label {
                 Text = "No masking is currently being performed.",
+                TextAlignment = TextAlignment.Left,
+                TextColor = Colors.Black,
                 Font = new Font(Styling.fontName, 9, FontStyle.Italic)
             };
             objectsDynamicLayout.Add(emptyLabel);
@@ -148,6 +152,8 @@ public class MaskingDialog : Dialog<bool> {
         var nameLabel = Styling.label(nameText, 10);
         var guidLabel = new Label {
             Text = "(" + objectId.ToString() + ")",
+            TextAlignment = TextAlignment.Left,
+            TextColor = Colors.Black,
             Font = new Font(Styling.fontName, 9, FontStyle.Italic)
         };
         var nameDynamicLayout = new DynamicLayout {

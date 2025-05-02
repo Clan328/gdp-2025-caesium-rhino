@@ -105,6 +105,8 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         var descriptionFontStyle = asset.description == null ? FontStyle.Italic : FontStyle.None;
         var descriptionLabel = new Label {
             Text = descriptionText,
+            TextAlignment = TextAlignment.Left,
+            TextColor = Colors.Black,
             Font = new Font(Styling.fontName, 11, descriptionFontStyle)
         };
 
@@ -112,6 +114,8 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         var attributionFontStyle = asset.attribution == null ? FontStyle.Italic : FontStyle.None;
         var attributionLabel = new Label {
             Text = attributionText,
+            TextAlignment = TextAlignment.Left,
+            TextColor = Colors.Black,
             Font = new Font(Styling.fontName, 9, attributionFontStyle)
         };
         var attributionLabelPanel = new Panel {

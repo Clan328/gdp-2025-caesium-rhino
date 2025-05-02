@@ -82,6 +82,8 @@ public class Styling {
     public static Label label(string text, int fontSize, bool bold = false) {
         return new Label{
             Text = text,
+            TextAlignment = TextAlignment.Left,
+            TextColor = Colors.Black,
             Font = new Font(Styling.fontName, fontSize, bold ? FontStyle.Bold : FontStyle.None)
         };
     }
