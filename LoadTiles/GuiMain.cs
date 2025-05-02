@@ -129,7 +129,7 @@ public class GDPDialog : Dialog<DialogResult> {
     private DynamicLayout createModelPanel() {
         var modelLabel = Styling.label("Model", 12);
 
-        this.selectedModelLabel = Styling.label(this.selectedAsset.name, 10, true);
+        this.selectedModelLabel = Styling.label(this.selectedAsset.name, 10, bold: true);
         var selectedModelLabelPanel = new Panel {
             Padding = new Padding(0, 0, 20, 0),
             Content = this.selectedModelLabel

@@ -99,34 +99,22 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
     }
 
     private Panel createAssetPanel(CesiumAsset asset) {
-        var nameLabel = Styling.label(asset.name, 16, true);
+        var nameLabel = Styling.label(asset.name, 16, bold: true);
 
         var descriptionText = asset.description == null ? "No asset description provided." : asset.description;
-        var descriptionFontStyle = asset.description == null ? FontStyle.Italic : FontStyle.None;
-        var descriptionLabel = new Label {
-            Text = descriptionText,
-            TextAlignment = TextAlignment.Left,
-            TextColor = Colors.Black,
-            Font = new Font(Styling.fontName, 11, descriptionFontStyle)
-        };
+        var descriptionLabel = Styling.label(descriptionText, 11, italic: asset.description == null);
 
         var attributionText = asset.attribution == null ? "No asset attribution provided." : asset.attribution;
-        var attributionFontStyle = asset.attribution == null ? FontStyle.Italic : FontStyle.None;
-        var attributionLabel = new Label {
-            Text = attributionText,
-            TextAlignment = TextAlignment.Left,
-            TextColor = Colors.Black,
-            Font = new Font(Styling.fontName, 9, attributionFontStyle)
-        };
+        var attributionLabel = Styling.label(attributionText, 9, italic: asset.attribution == null);
         var attributionLabelPanel = new Panel {
             Padding = new Padding(0, 10, 0, 0),
             Content = attributionLabel
         };
 
-        var idLabel = Styling.label($"ID: {asset.id}", 10, true);
+        var idLabel = Styling.label($"ID: {asset.id}", 10, bold: true);
 
         var dateText = asset.dateAdded == null ? "Date added: unknown" : $"Date added: {asset.dateAdded}";
-        var dateLabel = Styling.label(dateText, 10, true);
+        var dateLabel = Styling.label(dateText, 10, bold: true);
 
         StackLayout metadataStackLayout = new StackLayout {
             Orientation = Orientation.Horizontal,

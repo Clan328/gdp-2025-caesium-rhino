@@ -79,12 +79,15 @@ public class Styling {
         return dynamicLayout;
     }
 
-    public static Label label(string text, int fontSize, bool bold = false) {
+    public static Label label(string text, int fontSize, bool bold = false, bool italic = false) {
+        var fontStyle = FontStyle.None;
+        if (bold) fontStyle |= FontStyle.Bold;
+        if (italic) fontStyle |= FontStyle.Italic;
         return new Label{
             Text = text,
             TextAlignment = TextAlignment.Left,
             TextColor = Colors.Black,
-            Font = new Font(Styling.fontName, fontSize, bold ? FontStyle.Bold : FontStyle.None)
+            Font = new Font(Styling.fontName, fontSize, fontStyle)
         };
     }
 }

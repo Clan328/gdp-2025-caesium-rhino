@@ -51,12 +51,10 @@ public class MaskingDialog : Dialog<bool> {
             "Below is a list of the objects from which the masking will be performed. You can add or remove masking objects, and rename them to make them easier to manage.",
             9
         );
-        var boldTextLabel = new Label {
-            Text = "Any changes made here will be reflected the next time any data is imported.",
-            TextAlignment = TextAlignment.Left,
-            TextColor = Colors.Black,
-            Font = new Font(Styling.fontName, 9, FontStyle.Bold)
-        };
+        var boldTextLabel = Styling.label(
+            "Any changes made here will be reflected the next time any data is imported.",
+            9, bold: true
+        );
 
         var dynamicLayoutInner = new DynamicLayout {
             BackgroundColor = Styling.colourDark,
@@ -84,12 +82,10 @@ public class MaskingDialog : Dialog<bool> {
         objectsDynamicLayout.BeginVertical();
         
         if (this.objectPanels.Count == 0) {
-            var emptyLabel = new Label {
-                Text = "No masking is currently being performed.",
-                TextAlignment = TextAlignment.Left,
-                TextColor = Colors.Black,
-                Font = new Font(Styling.fontName, 9, FontStyle.Italic)
-            };
+            var emptyLabel = Styling.label(
+                "No masking is currently being performed.",
+                9, italic: true
+            );
             objectsDynamicLayout.Add(emptyLabel);
         }
 
@@ -150,12 +146,10 @@ public class MaskingDialog : Dialog<bool> {
         }
 
         var nameLabel = Styling.label(nameText, 10);
-        var guidLabel = new Label {
-            Text = "(" + objectId.ToString() + ")",
-            TextAlignment = TextAlignment.Left,
-            TextColor = Colors.Black,
-            Font = new Font(Styling.fontName, 9, FontStyle.Italic)
-        };
+        var guidLabel = Styling.label(
+            "(" + objectId.ToString() + ")",
+            9, italic: true
+        );
         var nameDynamicLayout = new DynamicLayout {
             Padding = new Padding(10, 0, 10, 0)
         };
