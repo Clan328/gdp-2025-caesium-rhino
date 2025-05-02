@@ -70,19 +70,14 @@ public class GDPDialog : Dialog<DialogResult> {
         var positionDynamicLayout = createPositionPanel();
         var buttonsDynamicLayout = createButtonsPanel();
 
-        var dynamicLayout = new DynamicLayout {
-            BackgroundColor = Styling.colourDarker
+        var components = new List<Panel> {
+            headerPanel,
+            authDynamicLayout,
+            modelDynamicLayout,
+            positionDynamicLayout,
+            buttonsDynamicLayout
         };
-        dynamicLayout.BeginVertical();
-        dynamicLayout.Add(headerPanel, true);
-        dynamicLayout.Add(authDynamicLayout, true);
-        dynamicLayout.Add(modelDynamicLayout, true);
-        dynamicLayout.Add(positionDynamicLayout, true);
-        dynamicLayout.Add(buttonsDynamicLayout, true);
-        dynamicLayout.Add(null, true);
-        dynamicLayout.EndVertical();
-
-        return dynamicLayout;
+        return Styling.createDialogContent(components);
     }
 
     private DynamicLayout createAuthenticationPanel() {

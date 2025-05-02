@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Eto.Drawing;
 using Eto.Forms;
 
@@ -63,6 +64,19 @@ public class Styling {
         headerPanel.Content = dynamicLayout;
 
         return headerPanel;
+    }
+
+    public static DynamicLayout createDialogContent(List<Panel> components) {
+        var dynamicLayout = new DynamicLayout {
+            BackgroundColor = Styling.colourDarker
+        };
+        dynamicLayout.BeginVertical();
+        foreach (Panel component in components) {
+            dynamicLayout.Add(component, true);
+        }
+        dynamicLayout.Add(null, true);
+        dynamicLayout.EndVertical();
+        return dynamicLayout;
     }
 
     public static Label label(string text, int fontSize, bool bold = false) {

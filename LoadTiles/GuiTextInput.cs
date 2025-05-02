@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Eto.Drawing;
 using Eto.Forms;
 
@@ -18,17 +19,12 @@ public class TextInputDialog : Dialog<string?> {
         var textInputPanel = createTextInputPanel(defaultValue);
         var buttonsDynamicLayout = createButtonsPanel();
 
-        var dynamicLayout = new DynamicLayout {
-            BackgroundColor = Styling.colourDarker
+        var components = new List<Panel> {
+            headerPanel,
+            textInputPanel,
+            buttonsDynamicLayout
         };
-        dynamicLayout.BeginVertical();
-        dynamicLayout.Add(headerPanel, true);
-        dynamicLayout.Add(textInputPanel, true);
-        dynamicLayout.Add(buttonsDynamicLayout, true);
-        dynamicLayout.Add(null);
-        dynamicLayout.EndVertical();
-
-        return dynamicLayout;
+        return Styling.createDialogContent(components);
     }
 
     private DynamicLayout createTextInputPanel(string defaultValue) {

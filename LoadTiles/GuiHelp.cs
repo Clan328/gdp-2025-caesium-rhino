@@ -1,6 +1,7 @@
 using Eto.Forms;
 using Eto.Drawing;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace LoadTiles;
 
@@ -179,18 +180,13 @@ public class MaskingHelpDialog : Dialog<bool> {
         var modifyTextDynamicLayout = createModifyTextPanel();
         var buttonDynamicLayout = createButtonPanel();
 
-        var dynamicLayout = new DynamicLayout {
-            BackgroundColor = Styling.colourDarker
+        var components = new List<Panel>() {
+            headerPanel,
+            addTextDynamicLayout,
+            modifyTextDynamicLayout,
+            buttonDynamicLayout
         };
-        dynamicLayout.BeginVertical();
-        dynamicLayout.Add(headerPanel, true);
-        dynamicLayout.Add(addTextDynamicLayout, true);
-        dynamicLayout.Add(modifyTextDynamicLayout, true);
-        dynamicLayout.Add(buttonDynamicLayout, true);
-        dynamicLayout.Add(null, true);
-        dynamicLayout.EndVertical();
-
-        return dynamicLayout;
+        return Styling.createDialogContent(components);
     }
 
     private DynamicLayout createAddTextPanel() {
