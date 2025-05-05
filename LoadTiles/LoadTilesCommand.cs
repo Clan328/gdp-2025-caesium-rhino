@@ -18,8 +18,8 @@ namespace LoadTiles
         public double latitude, longitude, altitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
         public CesiumAsset selectedAsset;
         public bool locationInputted = false;
-        public TemporaryGeometryConduit displayConduit;
         public AttributionConduit attributionConduit;
+
         public LoadTilesCommand()
         {
         }
@@ -81,11 +81,7 @@ namespace LoadTiles
 
             RhinoApp.WriteLine("Fetching...");
 
-            this.attributionConduit = new AttributionConduit();
-
-            this.attributionConduit = new AttributionConduit();
-
-            this.attributionConduit = new AttributionConduit();
+            attributionConduit = new AttributionConduit();
 
             LoadTilesGUI dialog = new LoadTilesGUI();
             if (this.locationInputted) {
