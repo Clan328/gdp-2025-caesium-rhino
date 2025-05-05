@@ -302,7 +302,19 @@ namespace LoadTiles
                     newObjects.Add(obj);
                 }
             }
+            
             OnTilesLoaded(doc, newObjects); // Possibly do something once tiles have been loaded
+
+            // Delete the temporary file
+            string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
+            if (File.Exists(tempPath)) {
+                try {
+                    File.Delete(tempPath);
+                } catch (IOException e) {
+                    Console.WriteLine($"Error deleting temporary file: {e.Message}");
+                }
+            }
+
             return newObjects;
         }
     }
