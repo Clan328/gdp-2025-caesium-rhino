@@ -88,6 +88,7 @@ public class MaskingCommand : Command {
             RhinoApp.WriteLine("Selected object is not a Brep.");
             return Result.Failure;
         }
+        var targetMesh = Mesh.CreateFromBrep(targetBrep, MeshingParameters.Default);
         targetBrep.Flip();
 
         Command[] commands = PlugIn.GetCommands();
@@ -114,12 +115,24 @@ public class MaskingCommand : Command {
         foreach (var tile in importedTiles) {
             var geo = tile.Geometry;
             if (geo is Mesh mesh) {
+                var meshSet = new Mesh[1];
+                meshSet[0] = mesh;
                 var meshBrep = Brep.CreateFromMesh(mesh, true);
                 if (meshBrep == null) continue;
-                
-                Intersection.BrepBrep(targetBrep, meshBrep, tolerance, out Curve[] curves, out Point3d[] points);
-                if (curves.Length > 0 || points.Length > 0) {
-                    // TODO: is this the best way of checking this? I have no idea.
+                Mesh[] intersection = Mesh.CreateBooleanIntersection(targetMesh, meshSet);
+                bool inside = false;
+                BoundingBox boundingBox = geo.GetBoundingBox(true);
+
+                Point3d[] corners = boundingBox.GetCorners();
+
+                foreach (Point3d corner in corners)
+                {
+                    bool result = targetBrep.IsPointInside(corner, tolerance, true);
+                    if (result != true)
+                        inside = true;
+                }
+
+                if (intersection.Length > 0 || inside) {
                     tilesIntersected.Add(tile);
                     trimmings.Add(meshBrep.Trim(targetBrep, tolerance));                    
                 }
@@ -140,7 +153,7 @@ public class MaskingCommand : Command {
             foreach (var brep in newBreps){
                 Guid id = doc.Objects.AddBrep(brep);
                 RhinoObject obj = doc.Objects.FindId(id);
-
+                /*
                 // Set the object's material to a solid colour
                 var attributes = obj.Attributes.Duplicate();
                 attributes.MaterialSource = Rhino.DocObjects.ObjectMaterialSource.MaterialFromObject;
@@ -148,7 +161,7 @@ public class MaskingCommand : Command {
                 int materialIndex = doc.Materials.Add(material);
                 attributes.MaterialIndex = materialIndex;
                 doc.Objects.ModifyAttributes(obj, attributes, true);
-
+                */
                 TemporaryGeometryConduit.Instance.AddObject(obj);
                 doc.Objects.Delete(obj);
             }
