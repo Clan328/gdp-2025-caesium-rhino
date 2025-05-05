@@ -13,7 +13,7 @@ namespace LoadTiles
     public class TileLoaderGoogle : TileLoader
     {
         private string? rootUrl, key, session;
-        private HashSet<string> copyrightSet = new HashSet<string>();
+        private HashSet<string> copyrightSet = new();
         protected override string RootUrl => rootUrl ?? throw new InvalidOperationException("Root URL not set.");
         protected override string AssetId => "2275207";
         public TileLoaderGoogle()
@@ -45,6 +45,7 @@ namespace LoadTiles
             session = queryParams["session"] ?? throw new InvalidOperationException("Session token not found.");
             // Reset copyright set
             copyrightSet.Clear();
+            copyrightSet.Add("Google");
         }
 
         protected override string FormUrl(string url)
@@ -90,20 +91,20 @@ namespace LoadTiles
         {
             // Extract copyright information from the GLB file to be collated
             string? copyright = GetCopyrightFromGlb(glbBytes);
-            if (copyright != null)
-            {
-                char[] delimiters = { ',', ';' };
-                string[] sources = copyright.Split(delimiters, 
-                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                foreach (string source in sources) copyrightSet.Add(source.Trim());
-            }
+            // Expected copyright format is "Google;Data <...>"
+            string expectedPrefix = "Google;Data ";
+            if (copyright == null || !copyright.StartsWith(expectedPrefix)) return;
+            // Add sources to the copyright set
+            string[] sources = copyright.Substring(expectedPrefix.Length).Split(",", 
+                StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            foreach (string source in sources) copyrightSet.Add(source);
         }
 
         protected override void OnTilesLoaded(RhinoDoc doc, List<RhinoObject> newObjects)
         {
             // Display copyright information in a separate overlay
             string sources = string.Join(", ", copyrightSet);
-            RhinoApp.WriteLine($"Copyrights: {sources}");  // TODO: Add this to an overlay in the viewport
+            RhinoApp.WriteLine($"Attributions: {sources}");  // TODO: Add this to an overlay in the viewport
         }
     }
 }
