@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
@@ -40,6 +41,10 @@ namespace LoadTiles
         /// Initialises the API parameters (URL to root, API key, session token etc.) for the 3D Tiles API.
         /// </summary>
         protected abstract void InitApiParameters(string cesiumIonApiKey);
+
+        // Functions that individual TileLoaders could implement
+        protected virtual void OnFetchGLB(byte[] glbBytes) {}
+        protected virtual void OnTilesLoaded(RhinoDoc doc, List<RhinoObject> newObjects) {}
 
         protected TileLoader()
         {
@@ -121,6 +126,7 @@ namespace LoadTiles
             if (linkparts[linkparts.Length - 1] != "glb") throw new InvalidOperationException("Link is not a GLB file.");
             // Load the GLB file from the API
             byte[] glbBytes = FetchFileFromAPI(client, FormUrl(glbLink));
+            OnFetchGLB(glbBytes); // Process the GLB file (e.g. extract copyright information)
             // Store the GLB file in a temporary location
             // This is necessary because the Rhino GLTF reader does not support loading from a byte array
             string tempPath = Path.Combine(Path.GetTempPath(), "temp.glb");
@@ -296,6 +302,7 @@ namespace LoadTiles
                     newObjects.Add(obj);
                 }
             }
+            OnTilesLoaded(doc, newObjects); // Possibly do something once tiles have been loaded
             return newObjects;
         }
     }
