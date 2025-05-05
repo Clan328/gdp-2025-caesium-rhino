@@ -1,0 +1,3 @@
+[submodule "TilesDataTest/3d-tiles-samples"]
+	path = TilesDataTest/3d-tiles-samples
+	url = git@github.com:CesiumGS/3d-tiles-samples.git

@@ -410,11 +410,11 @@ public record class Tileset(
     /// Rhino3d's.</param>
     /// <returns></returns>
     /// <exception cref="JsonException"></exception>
-    public static Tileset Deserialize(ReadOnlySpan<byte> data, Uri uri, Transform transform)
+    public static Tileset Deserialize(ReadOnlySpan<byte> data, Uri uri, Transform? transform)
     {
         var raw = Json.Tileset.FromJson(data)
             ?? throw new JsonException("JSON deserialisation returned null");
-        return FromJson(raw, uri, transform);
+        return FromJson(raw, uri, transform ?? Transform.Identity);
     }
 
     /// <summary>
@@ -427,11 +427,11 @@ public record class Tileset(
     /// Rhino3d's.</param>
     /// <returns></returns>
     /// <exception cref="JsonException"></exception>
-    public static Tileset Deserialize(string data, Uri uri, Transform transform)
+    public static Tileset Deserialize(string data, Uri uri, Transform? transform)
     {
         var raw = Json.Tileset.FromJson(data)
             ?? throw new JsonException("JSON deserialisation returned null");
-        return FromJson(raw, uri, transform);
+        return FromJson(raw, uri, transform ?? Transform.Identity);
     }
 }
 

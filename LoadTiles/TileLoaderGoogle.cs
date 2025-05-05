@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 using System.Web;
+using Rhino;
+using Rhino.DocObjects;
 using Rhino.Geometry;
 using TilesData;
 
@@ -9,6 +13,7 @@ namespace LoadTiles
     public class TileLoaderGoogle : TileLoader
     {
         private string? rootUrl, key, session;
+        private HashSet<string> copyrightSet = new();
         protected override string RootUrl => rootUrl ?? throw new InvalidOperationException("Root URL not set.");
         protected override string AssetId => "2275207";
         public TileLoaderGoogle()
@@ -38,11 +43,68 @@ namespace LoadTiles
             rootUrl = parts[0];
             var queryParams = HttpUtility.ParseQueryString(parts.Length > 1 ? parts[1] : "");
             session = queryParams["session"] ?? throw new InvalidOperationException("Session token not found.");
+            // Reset copyright set
+            copyrightSet.Clear();
+            copyrightSet.Add("Google");
         }
 
         protected override string FormUrl(string url)
         {
             return $"{url}?key={key}&session={session}";
+        }
+
+        private static string? GetCopyrightFromGlb(byte[] glbBytes)
+        {
+            const uint GLB_MAGIC = 0x46546C67; // ASCII 'glTF'
+            const uint CHUNK_TYPE_JSON = 0x4E4F534A; // ASCII 'JSON'
+
+            int offset = 0;
+
+            // Read header
+            uint magic = BitConverter.ToUInt32(glbBytes, offset); offset += 4;
+            if (magic != GLB_MAGIC)
+                throw new InvalidOperationException("Not a valid GLB file.");
+
+            offset += 8; // Skip version and length
+
+            // Read first chunk header
+            uint chunkLength = BitConverter.ToUInt32(glbBytes, offset); offset += 4;
+            uint chunkType = BitConverter.ToUInt32(glbBytes, offset); offset += 4;
+
+            if (chunkType != CHUNK_TYPE_JSON)
+                throw new InvalidOperationException("First chunk is not JSON.");
+
+            // Read JSON chunk
+            string jsonText = Encoding.UTF8.GetString(glbBytes, offset, (int)chunkLength);
+            using var doc = JsonDocument.Parse(jsonText);
+
+            // Extract asset.copyright
+            if (doc.RootElement.TryGetProperty("asset", out var asset) &&
+                asset.TryGetProperty("copyright", out var copyright))
+            {
+                return copyright.GetString();
+            }
+            return null;
+        }
+
+        protected override void OnFetchGLB(byte[] glbBytes)
+        {
+            // Extract copyright information from the GLB file to be collated
+            string? copyright = GetCopyrightFromGlb(glbBytes);
+            // Expected copyright format is "Google;Data <...>"
+            string expectedPrefix = "Google;Data ";
+            if (copyright == null || !copyright.StartsWith(expectedPrefix)) return;
+            // Add sources to the copyright set
+            string[] sources = copyright.Substring(expectedPrefix.Length).Split(",", 
+                StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            foreach (string source in sources) copyrightSet.Add(source);
+        }
+
+        protected override void OnTilesLoaded(RhinoDoc doc, List<RhinoObject> newObjects)
+        {
+            // Display copyright information in a separate overlay
+            string sources = string.Join(", ", copyrightSet);
+            RhinoApp.WriteLine($"Attributions: {sources}");  // TODO: Add this to an overlay in the viewport
         }
     }
 }

@@ -18,6 +18,7 @@ namespace LoadTiles
         public double latitude, longitude, altitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
         public CesiumAsset selectedAsset;
         public bool locationInputted = false;
+        public AttributionConduit attributionConduit;
 
         public LoadTilesCommand()
         {
@@ -36,7 +37,7 @@ namespace LoadTiles
         /// <param name="lon">Corresponding longitude of targetPoint</param>
         private List<Guid> TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon) {
             double scaleFactor = RhinoMath.UnitScale(UnitSystem.Meters, RhinoDoc.ActiveDoc.ModelUnitSystem);
-            
+
             // Calculate the three orthogonal vectors for rotation
             Vector3d up = new Vector3d(targetPoint);
             up.Unitize();
@@ -80,7 +81,9 @@ namespace LoadTiles
 
             RhinoApp.WriteLine("Fetching...");
 
-            GDPDialog dialog = new GDPDialog();
+            attributionConduit = new AttributionConduit();
+
+            LoadTilesGUI dialog = new LoadTilesGUI();
             if (this.locationInputted) {
                 dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance, this.selectedAsset);
             }
