@@ -2,6 +2,7 @@
 using Rhino.Commands;
 using System;
 using Rhino.Geometry;
+using Rhino.Geometry.Intersect;
 using System.Collections.Generic;
 using Rhino.DocObjects;
 using CesiumAuthentication;
@@ -36,8 +37,11 @@ namespace LoadTiles
         /// <param name="lat">Corresponding latitude of targetPoint</param>
         /// <param name="lon">Corresponding longitude of targetPoint</param>
         private List<Guid> TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon) {
+            bool bringToOrigin = true; // Flag to determine if we ignore the specified altitude and instead shift the geometry along the Z axis to the origin.
+            
             double scaleFactor = RhinoMath.UnitScale(UnitSystem.Meters, RhinoDoc.ActiveDoc.ModelUnitSystem);
-
+            targetPoint *= scaleFactor; // Convert the target point to the model units of the active document.
+            
             // Calculate the three orthogonal vectors for rotation
             Vector3d up = new Vector3d(targetPoint);
             up.Unitize();
@@ -49,20 +53,36 @@ namespace LoadTiles
             north.Unitize();
             Vector3d east = Vector3d.CrossProduct(north, up);
 
+            if (bringToOrigin)  
+            {
+                Ray3d upFromOrigin = new Ray3d(new Point3d(0, 0, 0), up);
+                List<GeometryBase> geometries = new();
+                foreach (RhinoObject obj in objects) {
+                    GeometryBase geometry = obj.Geometry;
+                    if (geometry is Mesh mesh) {
+                        if (Intersection.MeshRay(mesh, upFromOrigin) >= 0) {
+                            geometries.Add(Brep.CreateFromMesh(mesh, false));
+                        } 
+                    }
+                }
+                Point3d[] intersectionPoints = Intersection.RayShoot(upFromOrigin, geometries, 1);
+                if (intersectionPoints.Length > 0) targetPoint = intersectionPoints[0];
+                else RhinoApp.WriteLine("WARN: No intersection found with the ray from the origin to the geometry. Using the original target point.");
+            }
+
             // Calculates transformation needed to move to Rhino3d's origin
-            Transform toOrigin = Transform.Translation(-targetPoint.X*scaleFactor, -targetPoint.Y*scaleFactor, -targetPoint.Z*scaleFactor);
+            Transform toOrigin = Transform.Translation(-targetPoint.X, -targetPoint.Y, -targetPoint.Z);
             Transform rotate = Transform.Rotation(east, north, up, new Vector3d(1,0,0), new Vector3d(0,1,0), new Vector3d(0,0,1));
             Transform moveRot = rotate * toOrigin;
-
+            
+            // Apply the transformation to all loaded objects
             List<Guid> transformedObjects = new List<Guid>();
-
-            // Applies the transformation to all loaded tiles
             foreach (RhinoObject obj in objects) {
                 Guid guid = doc.Objects.Transform(obj, moveRot, true);
                 transformedObjects.Add(guid);
             }
-
             return transformedObjects;
+
         }
 
         /// <summary>
