@@ -19,6 +19,7 @@ namespace LoadTiles
         public CesiumAsset selectedAsset;
         public bool locationInputted = false;
         public TemporaryGeometryConduit displayConduit;
+        public AttributionConduit attributionConduit;
         public LoadTilesCommand()
         {
         }
@@ -79,6 +80,8 @@ namespace LoadTiles
             }
 
             RhinoApp.WriteLine("Fetching...");
+
+            this.attributionConduit = new AttributionConduit();
 
             GDPDialog dialog = new GDPDialog();
             if (this.locationInputted) {
