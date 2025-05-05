@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
@@ -327,10 +326,9 @@ namespace LoadTiles
         /// <param name="targetPoint">Point to translate to origin</param>
         /// <param name="lat">Corresponding latitude of targetPoint</param>
         /// <param name="lon">Corresponding longitude of targetPoint</param>
+        /// <param name="bringToOrigin">Whether to ignore specified altitude and shift objects along Z axis to origin</param>
         /// <returns>List of GUIDs of the transformed objects</returns>
-        public static List<Guid> TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon) {
-            // bool bringToOrigin = true; // Flag to determine if we ignore the specified altitude and instead shift the geometry along the Z axis to the origin.
-            
+        public static List<Guid> TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon, bool bringToOrigin) {
             double scaleFactor = RhinoMath.UnitScale(UnitSystem.Meters, RhinoDoc.ActiveDoc.ModelUnitSystem);
             targetPoint *= scaleFactor; // Convert the target point to the model units of the active document.
             
@@ -345,22 +343,28 @@ namespace LoadTiles
             north.Unitize();
             Vector3d east = Vector3d.CrossProduct(north, up);
 
-            // if (bringToOrigin)  // Doesn't work reliably
-            // {
-            //     Ray3d upFromOrigin = new Ray3d(new Point3d(0, 0, 0), up);
-            //     List<GeometryBase> geometries = new();
-            //     foreach (RhinoObject obj in objects) {
-            //         GeometryBase geometry = obj.Geometry;
-            //         if (geometry is Mesh mesh) {
-            //             if (Intersection.MeshRay(mesh, upFromOrigin) >= 0) {
-            //                 geometries.Add(Brep.CreateFromMesh(mesh, false));
-            //             } 
-            //         }
-            //     }
-            //     Point3d[] intersectionPoints = Intersection.RayShoot(upFromOrigin, geometries, 1);
-            //     if (intersectionPoints.Length > 0) targetPoint = intersectionPoints[0];
-            //     else RhinoApp.WriteLine("WARN: No intersection found with the ray from the origin to the geometry. Using the original target point.");
-            // }
+            if (bringToOrigin)
+            {
+                Ray3d upFromOrigin = new Ray3d(new Point3d(0, 0, 0), up);
+                // Find the first intersection point from the origin to the geometry
+                // This determines which point to bring to the origin
+                List<GeometryBase> geometries = new();
+                foreach (RhinoObject obj in objects) {
+                    GeometryBase geometry = obj.Geometry;
+                    // Brep.CreateFromMesh is very costly, hence we check which objects
+                    //   have their bounding box (which is cheap to calculate) intersecting with the ray.
+                    if (geometry is Mesh mesh) {
+                        // Rhino.Intersect only intersects rays with meshes, so we convert the bounding box to a mesh
+                        Mesh boundingMesh = Mesh.CreateFromBox(mesh.GetBoundingBox(false), 1, 1, 1);
+                        if (Intersection.MeshRay(boundingMesh, upFromOrigin) >= 0) {
+                            geometries.Add(Brep.CreateFromMesh(mesh, false));
+                        } 
+                    }
+                }
+                Point3d[] intersectionPoints = Intersection.RayShoot(upFromOrigin, geometries, 1);
+                if (intersectionPoints.Length > 0) targetPoint = intersectionPoints[0];
+                else RhinoApp.WriteLine("WARN: No intersection found with the ray from the origin to the geometry. Using the original target point.");
+            }
 
             // Calculates transformation needed to move to Rhino3d's origin
             Transform toOrigin = Transform.Translation(-targetPoint.X, -targetPoint.Y, -targetPoint.Z);

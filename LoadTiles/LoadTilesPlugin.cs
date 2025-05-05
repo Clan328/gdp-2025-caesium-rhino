@@ -71,10 +71,12 @@ namespace LoadTiles
             Rhino.Collections.ArchivableDictionary userDataDictionary = new();
             userDataDictionary.Set("latitude", loadTilesCommand.latitude);
             userDataDictionary.Set("longitude", loadTilesCommand.longitude);
-            userDataDictionary.Set("altitude", loadTilesCommand.altitude);
+            if (loadTilesCommand.altitude != null) 
+                userDataDictionary.Set("altitude", (double) loadTilesCommand.altitude);
             userDataDictionary.Set("radius", loadTilesCommand.renderDistance);
             userDataDictionary.Set("assetName", loadTilesCommand.selectedAsset.name);
-            if (loadTilesCommand.selectedAsset.id != null) userDataDictionary.Set("assetId", (int) loadTilesCommand.selectedAsset.id);
+            if (loadTilesCommand.selectedAsset.id != null) 
+                userDataDictionary.Set("assetId", (int) loadTilesCommand.selectedAsset.id);
 
             if (maskingCommand != null) {
                 StringBuilder sb = new StringBuilder();
@@ -103,7 +105,9 @@ namespace LoadTiles
                 Rhino.Collections.ArchivableDictionary userDataDictionary = archiveReader.ReadDictionary();
                 double latitude = userDataDictionary.GetDouble("latitude");
                 double longitude = userDataDictionary.GetDouble("longitude");
-                double altitude = userDataDictionary.GetDouble("altitude");
+                double? altitude;
+                try { altitude = userDataDictionary.GetDouble("altitude"); } 
+                catch (KeyNotFoundException) { altitude = null; }
                 double radius = userDataDictionary.GetDouble("radius");
                 string assetName = userDataDictionary.GetString("assetName", "Google Photorealistic 3D Tiles");
                 int assetId = userDataDictionary.GetInteger("assetId", 2275207);

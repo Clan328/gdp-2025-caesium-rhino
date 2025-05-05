@@ -16,7 +16,8 @@ namespace LoadTiles
     [Rhino.Commands.CommandStyle(Rhino.Commands.Style.ScriptRunner)]
     public class LoadTilesCommand : Command
     {
-        public double latitude, longitude, altitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
+        public double latitude, longitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
+        public double? altitude;
         public CesiumAsset selectedAsset;
         public bool locationInputted = false;
         public AttributionConduit attributionConduit;
@@ -84,11 +85,11 @@ namespace LoadTiles
             TemporaryGeometryConduit displayConduit = TemporaryGeometryConduit.Instance;
             displayConduit.Reset();
 
-            Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
+            Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude ?? 0.0);
             // Load tiles
             List<RhinoObject> objects = tileLoader.LoadTiles(doc, existingObjects, targetPoint, this.renderDistance, apiKey);
             // Move tiles to origin
-            List<Guid> transformedObjects = TileLoader.TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude);
+            List<Guid> transformedObjects = TileLoader.TranslateLoadedTiles(doc, objects, targetPoint, this.latitude, this.longitude, altitude == null);
 
             doc.Views.ActiveView.ActiveViewport.ZoomExtents();
 
