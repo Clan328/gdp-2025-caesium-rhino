@@ -21,23 +21,25 @@ public class AttributionConduit : DisplayConduit {
 
     protected override void PostDrawObjects(DrawEventArgs e) {
         base.PostDrawObjects(e);
+
+        int fontSize = 12;
+        int padding = 3;
         var textBoundsRectangle = e.Display.Measure2dText(
             this.attributionText,
             new Point2d(0, 0),
             false,
             0,
-            9,
+            fontSize,
             Styling.fontName
         );
         var viewportRectangle = e.Viewport.Size;
-        var textX = viewportRectangle.Width - textBoundsRectangle.Width;
-        var textY = viewportRectangle.Height;
-        Console.WriteLine("Screen coordinates");
-        Console.WriteLine(textX);
-        Console.WriteLine(textY);
+        int textWidth = Math.Abs(textBoundsRectangle.Width);
+        int textHeight = Math.Abs(textBoundsRectangle.Height);
+        var textX = viewportRectangle.Width - textWidth - padding;
+        var textY = viewportRectangle.Height - textHeight - padding;
         var backgroundFilledRectangle = new Rectangle(
-            textX, textY - textBoundsRectangle.Height,
-            textBoundsRectangle.Width, textBoundsRectangle.Height
+            textX - padding, textY - padding,
+            textWidth + padding * 2, textHeight + padding * 2
         );
         e.Display.Draw2dRectangle(
             backgroundFilledRectangle,
@@ -49,7 +51,7 @@ public class AttributionConduit : DisplayConduit {
             this.attributionText,
             System.Drawing.Color.Black,
             new Point2d(textX, textY),
-            false, 9, Styling.fontName
+            false, fontSize, Styling.fontName
         );
     }
 }
