@@ -102,10 +102,10 @@ public class MaskingCommand : Command {
             return Result.Failure;
         }
 
-        if (loadTilesCommand.displayConduit == null) return Result.Failure;
+        // if (loadTilesCommand.displayConduit == null) return Result.Failure;
 
-        var importedTiles = loadTilesCommand.displayConduit.importedObjects;
-        if (importedTiles == null) return Result.Failure;
+        var importedTiles = TemporaryGeometryConduit.Instance.importedObjects;
+        // if (importedTiles == null) return Result.Failure;
 
         var tilesIntersected = new List<RhinoObject>();
         var trimmings = new List<Brep[]>();
@@ -133,7 +133,7 @@ public class MaskingCommand : Command {
         Console.WriteLine(tilesIntersected.Count);
 
         foreach (var tile in tilesIntersected) {
-            loadTilesCommand.displayConduit.importedObjects.Remove(tile);
+            TemporaryGeometryConduit.Instance.importedObjects.Remove(tile);
         }
 
         foreach (var newBreps in trimmings) {
@@ -149,7 +149,7 @@ public class MaskingCommand : Command {
                 attributes.MaterialIndex = materialIndex;
                 doc.Objects.ModifyAttributes(obj, attributes, true);
 
-                loadTilesCommand.displayConduit.addObject(obj);
+                TemporaryGeometryConduit.Instance.AddObject(obj);
                 doc.Objects.Delete(obj);
             }
         }

@@ -18,7 +18,7 @@ namespace LoadTiles
         public double latitude, longitude, altitude, renderDistance; // We store the last inputted values so that we can write them to file when saving.
         public CesiumAsset selectedAsset;
         public bool locationInputted = false;
-        public TemporaryGeometryConduit displayConduit;
+
         public LoadTilesCommand()
         {
         }
@@ -115,7 +115,8 @@ namespace LoadTiles
             this.renderDistance = result.radius;  // Radius around target point to load.
 
             // Used to display the objects we import, even though they don't "exist" in the traditional sense in the project.
-            this.displayConduit = new TemporaryGeometryConduit();
+            TemporaryGeometryConduit displayConduit = TemporaryGeometryConduit.Instance;
+            displayConduit.Reset();
 
             Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
             // Load tiles
@@ -129,7 +130,7 @@ namespace LoadTiles
             foreach (var guid in transformedObjects) {
                 var obj = doc.Objects.FindId(guid);
                 if (obj == null) continue;
-                this.displayConduit.addObject(obj);
+                displayConduit.AddObject(obj);
                 doc.Objects.Delete(obj);
             }
 

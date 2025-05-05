@@ -4,15 +4,27 @@ using Rhino.Geometry;
 using Rhino.Display;
 using Rhino.DocObjects;
 using System.Collections.Generic;
+using Rhino.Render.CustomRenderMeshes;
 
 namespace LoadTiles;
 
 public class TemporaryGeometryConduit : DisplayConduit {
-    public List<RhinoObject> importedObjects;
+    public List<RhinoObject> importedObjects = new List<RhinoObject>();
 
-    public TemporaryGeometryConduit() {
+    private static TemporaryGeometryConduit instance = null;
+
+    private TemporaryGeometryConduit() {
         this.importedObjects = new List<RhinoObject>();
         this.Enabled = true;
+    }
+
+    public static TemporaryGeometryConduit Instance {
+        get {
+            if (instance == null) {
+                instance = new TemporaryGeometryConduit();
+            }
+            return instance;
+        }
     }
 
     /// <summary>
@@ -36,7 +48,11 @@ public class TemporaryGeometryConduit : DisplayConduit {
         }
     }
 
-    public void addObject(RhinoObject obj) {
+    public void AddObject(RhinoObject obj) {
         this.importedObjects.Add(obj);
+    }
+
+    public void Reset() {
+        importedObjects = new List<RhinoObject>();
     }
 }
