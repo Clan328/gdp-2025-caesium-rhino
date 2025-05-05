@@ -76,7 +76,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         foreach (CesiumAsset asset in assets) {
             if (asset.id == null) continue;
 
-            var assetPanel = createAssetPanel(asset);
+            var assetPanel = createAssetPanel(asset, asset.id == 2275207 || asset.id == 96188);
 
             assetsDynamicLayout.Add(assetPanel, true, false);
         }
@@ -98,7 +98,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         return assetsPanel;
     }
 
-    private Panel createAssetPanel(CesiumAsset asset) {
+    private Panel createAssetPanel(CesiumAsset asset, bool available=true) {
         var nameLabel = Styling.label(asset.name, 16, bold: true);
 
         var descriptionText = asset.description == null ? "No asset description provided." : asset.description;
@@ -123,9 +123,9 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
             Items = { idLabel, dateLabel }
         };
 
-        Button importButton = new Button{Text = "Select"};
+        Button importButton = new Button{Text = (available? "Select" : "Not supported yet")};
         importButton.Click += (sender, e) => {
-            Close(asset);
+            if (available) Close(asset);
         };
 
         var importButtonDynamicLayout = new DynamicLayout {
