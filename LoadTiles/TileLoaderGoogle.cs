@@ -104,7 +104,9 @@ namespace LoadTiles
         {
             // Display copyright information in a separate overlay
             string sources = string.Join(", ", copyrightSet);
-            RhinoApp.WriteLine($"Attributions: {sources}");  // TODO: Add this to an overlay in the viewport
+            AttributionConduit.Instance.setAttributionText(
+                $"Attributions: {sources}"
+            );
         }
     }
 }

@@ -81,7 +81,7 @@ namespace LoadTiles
 
             RhinoApp.WriteLine("Fetching...");
 
-            attributionConduit = new AttributionConduit();
+            attributionConduit = AttributionConduit.Instance;
 
             LoadTilesGUI dialog = new LoadTilesGUI();
             if (this.locationInputted) {

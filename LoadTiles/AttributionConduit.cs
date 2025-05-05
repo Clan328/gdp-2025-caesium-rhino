@@ -6,7 +6,18 @@ using Rhino.Geometry;
 namespace LoadTiles;
 
 public class AttributionConduit : DisplayConduit {
-    private string attributionText = "Hello world";
+    private static AttributionConduit instance = null;
+
+    public static AttributionConduit Instance {
+        get {
+            if (instance == null) {
+                instance = new AttributionConduit();
+            }
+            return instance;
+        }
+    }
+
+    private string attributionText = "";
     public AttributionConduit() {
         this.Enabled = true;
     }
@@ -21,6 +32,8 @@ public class AttributionConduit : DisplayConduit {
 
     protected override void PostDrawObjects(DrawEventArgs e) {
         base.PostDrawObjects(e);
+
+        if (attributionText == "") return;
 
         int fontSize = 12;
         int padding = 3;
