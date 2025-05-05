@@ -18,8 +18,13 @@ public class AttributionConduit : DisplayConduit {
     }
 
     private string attributionText = "";
+    private DisplayBitmap? googleLogo;
     public AttributionConduit() {
         this.Enabled = true;
+        
+        // var googleBitmap = new Bitmap("C:\\Users\\dylan\\Downloads\\google_logos\\google_on_white.png");
+        // this.googleLogo = new DisplayBitmap(googleBitmap);
+        // TODO: load Google logo on the fly
     }
 
     public void setAttributionText(string attributionText) {
@@ -34,9 +39,16 @@ public class AttributionConduit : DisplayConduit {
         base.PostDrawObjects(e);
 
         if (attributionText == "") return;
+        if (this.googleLogo == null) return;
+
+        var logoSize = this.googleLogo.Size;
+        var logoAspectRatio = logoSize.Width / logoSize.Height;
 
         int fontSize = 12;
         int padding = 3;
+        int logoHeight = fontSize;
+        int logoWidth = logoAspectRatio * logoHeight;
+
         var textBoundsRectangle = e.Display.Measure2dText(
             this.attributionText,
             new Point2d(0, 0),
@@ -51,8 +63,8 @@ public class AttributionConduit : DisplayConduit {
         var textX = viewportRectangle.Width - textWidth - padding;
         var textY = viewportRectangle.Height - textHeight - padding;
         var backgroundFilledRectangle = new Rectangle(
-            textX - padding, textY - padding,
-            textWidth + padding * 2, textHeight + padding * 2
+            textX - padding - logoWidth, textY - padding,
+            textWidth + padding * 2 + logoWidth, textHeight + padding * 2
         );
         e.Display.Draw2dRectangle(
             backgroundFilledRectangle,
@@ -60,6 +72,14 @@ public class AttributionConduit : DisplayConduit {
             0,
             System.Drawing.Color.White
         );
+
+        e.Display.DrawSprite(
+            this.googleLogo,
+            new Point2d(textX - logoWidth / 2, textY + logoHeight / 2),
+            logoWidth,
+            logoHeight
+        );
+
         e.Display.Draw2dText(
             this.attributionText,
             System.Drawing.Color.Black,
