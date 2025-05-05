@@ -31,7 +31,7 @@ public class DialogResult {
     }
 }
 
-public class GDPDialog : Dialog<DialogResult> {
+public class LoadTilesGUI : Dialog<DialogResult> {
     private TextBox latitudeTextBox;
     private TextBox longitudeTextBox;
     private TextBox altitudeTextBox;
@@ -50,7 +50,7 @@ public class GDPDialog : Dialog<DialogResult> {
         );
     }
 
-    public GDPDialog() {
+    public LoadTilesGUI() {
         Title = "Fetch real world data";
         ClientSize = new Size(400, 550);
 

@@ -83,7 +83,7 @@ namespace LoadTiles
 
             this.attributionConduit = new AttributionConduit();
 
-            GDPDialog dialog = new GDPDialog();
+            LoadTilesGUI dialog = new LoadTilesGUI();
             if (this.locationInputted) {
                 dialog.prefillData(this.latitude, this.longitude, this.altitude, this.renderDistance, this.selectedAsset);
             }
