@@ -19,7 +19,6 @@ namespace LoadTiles
         public CesiumAsset selectedAsset;
         public bool locationInputted = false;
         public TemporaryGeometryConduit displayConduit;
-        public AttributionConduit attributionConduit;
         public LoadTilesCommand()
         {
         }
@@ -37,7 +36,7 @@ namespace LoadTiles
         /// <param name="lon">Corresponding longitude of targetPoint</param>
         private List<Guid> TranslateLoadedTiles(RhinoDoc doc, IEnumerable<RhinoObject> objects, Point3d targetPoint, double lat, double lon) {
             double scaleFactor = RhinoMath.UnitScale(UnitSystem.Meters, RhinoDoc.ActiveDoc.ModelUnitSystem);
-            
+
             // Calculate the three orthogonal vectors for rotation
             Vector3d up = new Vector3d(targetPoint);
             up.Unitize();
@@ -118,7 +117,8 @@ namespace LoadTiles
             this.renderDistance = result.radius;  // Radius around target point to load.
 
             // Used to display the objects we import, even though they don't "exist" in the traditional sense in the project.
-            this.displayConduit = new TemporaryGeometryConduit();
+            TemporaryGeometryConduit displayConduit = TemporaryGeometryConduit.Instance;
+            displayConduit.Reset();
 
             Point3d targetPoint = Helper.LatLonToEPSG4978(this.latitude, this.longitude, this.altitude);
             // Load tiles
@@ -132,7 +132,7 @@ namespace LoadTiles
             foreach (var guid in transformedObjects) {
                 var obj = doc.Objects.FindId(guid);
                 if (obj == null) continue;
-                this.displayConduit.addObject(obj);
+                displayConduit.AddObject(obj);
                 doc.Objects.Delete(obj);
             }
 
