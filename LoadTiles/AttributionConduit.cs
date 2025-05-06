@@ -18,12 +18,12 @@ public class AttributionConduit : DisplayConduit {
     }
 
     private string attributionText = "";
-    private DisplayBitmap? googleLogo;
+    private DisplayBitmap? logoImage;
     public AttributionConduit() {
         this.Enabled = true;
         
         // var googleBitmap = new Bitmap("C:\\Users\\dylan\\Downloads\\google_logos\\google_on_white.png");
-        // this.googleLogo = new DisplayBitmap(googleBitmap);
+        // this.logoImage = new DisplayBitmap(googleBitmap);
         // TODO: load Google logo on the fly
     }
 
@@ -35,19 +35,8 @@ public class AttributionConduit : DisplayConduit {
         return this.attributionText;
     }
 
-    protected override void PostDrawObjects(DrawEventArgs e) {
-        base.PostDrawObjects(e);
-
-        if (attributionText == "") return;
-        if (this.googleLogo == null) return;
-
-        var logoSize = this.googleLogo.Size;
-        var logoAspectRatio = logoSize.Width / logoSize.Height;
-
-        int fontSize = 12;
-        int padding = 3;
-        int logoHeight = fontSize;
-        int logoWidth = logoAspectRatio * logoHeight;
+    private void drawAttributionText(DrawEventArgs e, int fontSize, int padding) {
+        if (this.attributionText == "") return;
 
         var textBoundsRectangle = e.Display.Measure2dText(
             this.attributionText,
@@ -63,8 +52,8 @@ public class AttributionConduit : DisplayConduit {
         var textX = viewportRectangle.Width - textWidth - padding;
         var textY = viewportRectangle.Height - textHeight - padding;
         var backgroundFilledRectangle = new Rectangle(
-            textX - padding - logoWidth, textY - padding,
-            textWidth + padding * 2 + logoWidth, textHeight + padding * 2
+            textX - padding, textY - padding,
+            textWidth + padding * 2, textHeight + padding * 2
         );
         e.Display.Draw2dRectangle(
             backgroundFilledRectangle,
@@ -72,19 +61,50 @@ public class AttributionConduit : DisplayConduit {
             0,
             System.Drawing.Color.White
         );
-
-        e.Display.DrawSprite(
-            this.googleLogo,
-            new Point2d(textX - logoWidth / 2, textY + logoHeight / 2),
-            logoWidth,
-            logoHeight
-        );
-
         e.Display.Draw2dText(
             this.attributionText,
             System.Drawing.Color.Black,
             new Point2d(textX, textY),
             false, fontSize, Styling.fontName
         );
+    }
+
+    private void drawLogo(DrawEventArgs e, int fontSize, int padding) {
+        if (this.logoImage == null) return;
+
+        var logoSize = this.logoImage.Size;
+        var logoAspectRatio = logoSize.Width / logoSize.Height;
+
+        int logoHeight = fontSize;
+        int logoWidth = logoAspectRatio * logoHeight;
+
+        var viewportRectangle = e.Viewport.Size;
+        var imageY = viewportRectangle.Height - logoHeight - padding;
+        var backgroundFilledRectangle = new Rectangle(
+            0, imageY - padding,
+            logoWidth + padding * 2, logoHeight + padding * 2
+        );
+        e.Display.Draw2dRectangle(
+            backgroundFilledRectangle,
+            System.Drawing.Color.Transparent,
+            0,
+            System.Drawing.Color.White
+        );
+        e.Display.DrawSprite(
+            this.logoImage,
+            new Point2d((logoWidth + padding) / 2, imageY + logoHeight / 2),
+            logoWidth,
+            logoHeight
+        );
+    }
+
+    protected override void PostDrawObjects(DrawEventArgs e) {
+        base.PostDrawObjects(e);
+
+        int fontSize = 12;
+        int padding = 3;
+
+        this.drawAttributionText(e, fontSize, padding);
+        this.drawLogo(e, fontSize, padding);
     }
 }
