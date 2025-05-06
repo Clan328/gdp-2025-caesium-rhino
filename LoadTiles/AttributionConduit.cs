@@ -1,5 +1,7 @@
 using System;
 using System.Drawing;
+using System.IO;
+using System.Net.Http;
 using Rhino.Display;
 using Rhino.Geometry;
 
@@ -21,10 +23,23 @@ public class AttributionConduit : DisplayConduit {
     private DisplayBitmap? logoImage;
     public AttributionConduit() {
         this.Enabled = true;
-        
-        // var googleBitmap = new Bitmap("C:\\Users\\dylan\\Downloads\\google_logos\\google_on_white.png");
-        // this.logoImage = new DisplayBitmap(googleBitmap);
-        // TODO: load Google logo on the fly
+    }
+
+    public async void loadGoogleImage() {
+        string url = "https://www.google.co.uk/images/branding/googlelogo/1x/googlelogo_white_background_color_272x92dp.png";
+
+        using (HttpClient client = new HttpClient()) {
+            try {
+                byte[] imageBytes = await client.GetByteArrayAsync(url);
+                using (MemoryStream ms = new MemoryStream(imageBytes)) {
+                    var bitmap = new Bitmap(ms);
+                    this.logoImage = new DisplayBitmap(bitmap);
+                }
+            } catch (Exception e) {
+                Console.WriteLine($"Error downloading image: {e.Message}");
+                return;
+            }
+        }
     }
 
     public void setAttributionText(string attributionText) {
@@ -73,10 +88,10 @@ public class AttributionConduit : DisplayConduit {
         if (this.logoImage == null) return;
 
         var logoSize = this.logoImage.Size;
-        var logoAspectRatio = logoSize.Width / logoSize.Height;
+        var logoAspectRatio = (float) logoSize.Width / logoSize.Height;
 
         int logoHeight = fontSize;
-        int logoWidth = logoAspectRatio * logoHeight;
+        int logoWidth = (int) (logoAspectRatio * logoHeight);
 
         var viewportRectangle = e.Viewport.Size;
         var imageY = viewportRectangle.Height - logoHeight - padding;

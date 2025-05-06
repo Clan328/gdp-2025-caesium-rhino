@@ -107,6 +107,7 @@ namespace LoadTiles
             AttributionConduit.Instance.setAttributionText(
                 $"Attributions: {sources}"
             );
+            AttributionConduit.Instance.loadGoogleImage();
         }
     }
 }
