@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net.Http;
 using Rhino.Display;
 using Rhino.Geometry;
+using Rhino.UI;
 
 namespace LoadTiles;
 
@@ -21,8 +23,15 @@ public class AttributionConduit : DisplayConduit {
 
     private string attributionText = "";
     private DisplayBitmap? logoImage;
+    private AttributionMouseCallback mouseCallback;
     public AttributionConduit() {
         this.Enabled = true;
+        this.mouseCallback = new AttributionMouseCallback();
+        this.mouseCallback.Enabled = true;
+    }
+
+    public void setClickURL(string url) {
+        this.mouseCallback.url = url;
     }
 
     public async void loadGoogleImage() {
@@ -82,6 +91,11 @@ public class AttributionConduit : DisplayConduit {
             new Point2d(textX, textY),
             false, fontSize, Styling.fontName
         );
+
+        this.mouseCallback.minX = backgroundFilledRectangle.X;
+        this.mouseCallback.maxX = backgroundFilledRectangle.X + backgroundFilledRectangle.Width;
+        this.mouseCallback.minY = backgroundFilledRectangle.Y;
+        this.mouseCallback.maxY = backgroundFilledRectangle.Y + backgroundFilledRectangle.Height;
     }
 
     private void drawLogo(DrawEventArgs e, int fontSize, int padding) {
@@ -121,5 +135,29 @@ public class AttributionConduit : DisplayConduit {
 
         this.drawAttributionText(e, fontSize, padding);
         this.drawLogo(e, fontSize, padding);
+    }
+}
+
+public class AttributionMouseCallback : Rhino.UI.MouseCallback {
+    public int minX = 0;
+    public int maxX = 0;
+    public int minY = 0;
+    public int maxY = 0;
+    public string url = "";
+    protected override void OnMouseDown(MouseCallbackEventArgs e)
+    {
+        base.OnMouseDown(e);
+
+        var p = e.ViewportPoint;
+        if (p.X >= minX && p.X <= maxX) {
+            if (p.Y >= minY && p.Y <= maxY) {
+                if (url != "") {
+                    Process.Start(new ProcessStartInfo {
+                        FileName = this.url,
+                        UseShellExecute = true
+                    });
+                }
+            }
+        }
     }
 }

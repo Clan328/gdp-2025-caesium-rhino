@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Rhino;
+using Rhino.DocObjects;
 
 namespace LoadTiles
 {
@@ -22,6 +24,18 @@ namespace LoadTiles
             accessToken = doc.RootElement.GetProperty("accessToken").ToString();
             // Set the OAuth token for the Cesium Tiles client
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        protected override void OnTilesLoaded(RhinoDoc doc, List<RhinoObject> newObjects)
+        {
+            base.OnTilesLoaded(doc, newObjects);
+
+            AttributionConduit.Instance.setAttributionText(
+                "© OpenStreetMap contributors"
+            );
+            AttributionConduit.Instance.setClickURL(
+                "https://www.openstreetmap.org/copyright"
+            );
         }
   }
 }
