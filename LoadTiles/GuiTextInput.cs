@@ -5,6 +5,9 @@ using Eto.Forms;
 namespace LoadTiles;
 
 public class TextInputDialog : Dialog<string?> {
+    /* This class is just used to simply get text input from the user.
+     * As far as I could tell, the C# language didn't natively have a way to do this. */
+
     private TextBox textBox;
     public TextInputDialog(string title, string subtitle, string defaultValue) {
         Title = title;

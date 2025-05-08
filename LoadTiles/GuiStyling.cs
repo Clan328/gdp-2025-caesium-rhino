@@ -5,6 +5,10 @@ using Eto.Forms;
 namespace LoadTiles;
 
 public class Styling {
+    /* This class is used to ensure consistency of styling across all windows in this plugin. */
+
+    /* Colour palette used across all windows in the plugin. */
+
     public static Color colourVeryLight = Color.FromRgb(0xC9F2C7);
     public static Color colourLighter = Color.FromRgb(0xACECA1);
     public static Color colourLight = Color.FromRgb(0x96BE8C);
