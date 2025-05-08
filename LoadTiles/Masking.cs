@@ -11,7 +11,7 @@ using System.Linq;
 namespace LoadTiles;
 
 public class MaskingCommand : Command {
-    public override string EnglishName => "Mask";
+    public override string EnglishName => "SealionMask";
 
     public List<Guid> maskingObjects = new List<Guid>();
     public List<string> maskingObjectNames = new List<string>();
@@ -94,7 +94,7 @@ public class MaskingCommand : Command {
         Command[] commands = PlugIn.GetCommands();
         LoadTilesCommand loadTilesCommand = null;
         foreach (Command command in commands) {
-            if (command.EnglishName == "Fetch") {
+            if (command.EnglishName == "SealionFetch") {
                 loadTilesCommand = (LoadTilesCommand) command;
             }
         }

@@ -52,9 +52,9 @@ namespace LoadTiles
             LoadTilesCommand loadTilesCommand = null;
             MaskingCommand maskingCommand = null;
             foreach (Rhino.Commands.Command command in commands) {
-                if (command.EnglishName == "Fetch") {
+                if (command.EnglishName == "SealionFetch") {
                     loadTilesCommand = (LoadTilesCommand) command;
-                } else if (command.EnglishName == "Mask") {
+                } else if (command.EnglishName == "SealionMask") {
                     maskingCommand = (MaskingCommand) command;
                 }
             }
@@ -120,9 +120,9 @@ namespace LoadTiles
                 LoadTilesCommand loadTilesCommand = null;
                 MaskingCommand maskingCommand = null;
                 foreach (Rhino.Commands.Command command in commands) {
-                    if (command.EnglishName == "Fetch") {
+                    if (command.EnglishName == "SealionFetch") {
                         loadTilesCommand = (LoadTilesCommand) command;
-                    } else if (command.EnglishName == "Mask") {
+                    } else if (command.EnglishName == "SealionMask") {
                         maskingCommand = (MaskingCommand) command;
                     }
                 }

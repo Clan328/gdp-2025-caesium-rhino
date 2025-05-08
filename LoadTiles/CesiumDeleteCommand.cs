@@ -5,7 +5,7 @@ namespace LoadTiles
     public class CesiumDeleteCommand : Command
     {
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "CesiumDelete";
+        public override string EnglishName => "SealionDelete";
 
         /// <summary>
         /// Handles the user running the command.

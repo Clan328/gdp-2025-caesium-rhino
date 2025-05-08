@@ -27,7 +27,7 @@ namespace LoadTiles
         }
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "Fetch";
+        public override string EnglishName => "SealionFetch";
 
         /// <summary>
         /// Handles the user running the command.
@@ -119,7 +119,7 @@ namespace LoadTiles
             Command[] commands = PlugIn.GetCommands();
             MaskingCommand maskingCommand = null;
             foreach (Command command in commands) {
-                if (command.EnglishName == "Mask") {
+                if (command.EnglishName == "SealionMask") {
                     maskingCommand = (MaskingCommand) command;
                 }
             }
@@ -132,7 +132,7 @@ namespace LoadTiles
             Command[] commands = PlugIn.GetCommands();
             MaskingCommand maskingCommand = null;
             foreach (Command command in commands) {
-                if (command.EnglishName == "Mask") {
+                if (command.EnglishName == "SealionMask") {
                     maskingCommand = (MaskingCommand) command;
                 }
             }
