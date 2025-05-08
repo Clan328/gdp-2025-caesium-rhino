@@ -1,26 +1,49 @@
-# Getting started with LoadTiles plugin
-  Debug Mode:
-  Open the repo directory in VS Code, then use the "Run and Debug" feature (look for it on the sidebar, then look for "Rhino 8 - netcore" in the run and debug configurations).
-  It should open an instance of Rhino with the plugin loaded.
-  
-  In Rhino's command line (which should be positioned near the top of the window), type "Fetch". 
-  If the plugin was loaded correctly it should start autocompleting this function name as you type it. 
-  This should open a tab in your browser, prompting you to log-in and grant permission to fetch the user's access token.
-  
-  Note: you will need a Cesium Ion access token, which you can configure manually [here](https://ion.cesium.com/tokens).
-  
-  When prompted, select the tileset you would like to load from, then enter the longitude and latitude of where you want to load.
-  You may wish to specify an altitude, but if left blank, altitude will autoselect to place tiles as close to initial plane as possible.
-  You should also specify a radius (in metres) of tiles to load from your origin point. This is, at default, 200; larger values may result in much slower loading times.
+# 🦭 SeaLion
+ A real-world imagery loader for [Rhino3D](https://www.rhino3d.com/)
+ 
+![A render of the Radcliffe Camera and surrounding buildings, imported from Google's 3D Tiles API](https://i.imgur.com/juXmrB9.png)
+## Getting started
+This plugin makes use of the [Cesium Ion platform](https://ion.cesium.com/). Make an account on Cesium Ion before using this plugin.
 
-  //TODO: Instructions on using masking tools. Instructions on compiling plugin for Windows/Mac.
+Jump to:
+* [Installation](#installation)
+* [Loading tiles](#loading-tiles)
+* [Masking](#masking)
+## Installation 
+You can find the .yak file for the plugin on the [Releases page](https://github.com/Z-snails/gdp-2025-caesium-rhino/releases).
 
+To install this plugin on Rhino, type the following on the Rhino command line:
+`_-PackageManager`. 
+Then, select `Install`, then `Browse`, and select this plugin.
 
-## LoadTiles/sampletileset.json
-This is a sample JSON response from Google Maps 3D tiles - to test (and save on API calls!)
+## Loading Tiles
+In the Rhino command line, type `SealionFetch`. You will be prompted to authenticate with Cesium Ion, and your credentials will be saved for subsequent uses.
 
-## LoadTiles/LoadTilesCommand.cs
-This is where most of the work on the plugin side of the project currently lies.
+If authentication is successful (and immediately on each subsequent use), a GUI will appear.
 
-TODO:
-- Selectively load the descendants of a tile. You can find an implementation of a traversal program [here](https://github.com/CesiumGS/cesium/blob/5eaa2280f495d8f300d9e1f0497118c97aec54c8/packages/engine/Source/Scene/Cesium3DTilesetBaseTraversal.js).
+### Model
+Currently, two tilesets are supported by the plugin, both of which should be included in your Cesium Ion assets by default.
+* **Google Photorealistic 3D Tiles** (Recommended): Provides both terrain data and buildings, and includes colour information.
+* **Cesium OSM Buildings**: Provides only buildings, no terrain. No colour information included. *Known issue: Individual buildings very far away from the specified location may be loaded.*
+
+### Specifying Location
+The tileset will be loaded at the origin in Rhino3D.
+* **Latitude**, **Longitude**: Specifies the target location which serves as the centre of the tiles to be loaded. The location itself will be loaded at the origin, barring altitude adjustments (see below).
+* **Altitude**: If this is specified, then the location on the globe at the given latitude and longitude, and the specified altitude in metres, will be mapped to the origin. Alternatively, this may be left blank. In this case, the loader will attempt to map the ground level of the loaded tiles to the origin, but this is often imperfect.
+* **Radius**: Specifies the radius around the target location which tiles should be loaded. Note that this is a *minimum*; some tiles which fall mostly outside of this radius may still be loaded. Increasing the radius may significantly extend loading time.
+
+### Loading
+After the parameters have been specified, click the `Import` button to begin loading tiles. The plugin calls the API of the specified tileset, and recursively traverses the tree of tiles to select the ones to load. Note that this can be a long process; expect to have to wait minutes for the tiles to be ready.
+
+When the tileset has been successfully imported, the active viewport will be automatically zoomed to the extents of the loaded tiles.
+
+### Clearing Up
+To delete the loaded tiles, type `SealionDelete` in the command window.
+
+## Masking
+This plugin supports masking out parts of the tileset using Rhino objects. 
+
+1. Create an object that overlaps the segment of the tiles to be masked out.
+2. Type `SealionMask` in the command window to show the GUI.
+3. Click `Add`, then click on the object created in Step 1.
+4. You may have to wait some time while masking is being performed.
