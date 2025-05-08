@@ -30,7 +30,7 @@ namespace LoadTiles
         public static LoadTilesCommand Instance { get; set;}
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "Fetch";
+        public override string EnglishName => "SealionFetch";
 
         /// <summary>
         /// Handles the user running the command.

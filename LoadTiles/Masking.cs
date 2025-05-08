@@ -11,7 +11,7 @@ using System.Linq;
 namespace LoadTiles;
 
 public class MaskingCommand : Command {
-    public override string EnglishName => "Mask";
+    public override string EnglishName => "SealionMask";
 
     public List<Guid> maskingObjects = new List<Guid>();
     public List<string> maskingObjectNames = new List<string>();
