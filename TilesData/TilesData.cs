@@ -307,7 +307,6 @@ public record class TileParseContext(
     List<MetadataEntity> Groups
 );
 
-// TODO: implement implicit tiling
 /// <summary>
 /// A tile that might contain geometry and/or sub-tiles
 /// </summary>
@@ -435,79 +434,3 @@ public record class Tileset(
     }
 }
 
-
-/*
-TODO: port these to new representation
-
-/// <summary>
-/// Class which provides context for processing tiles.
-/// </summary>
-/// <param name="BaseUri">The base URI, used to resolve relative URLs</param>
-/// <param name="Transform">The current transform from this tiles local space to global space</param>
-/// <param name="InverseTransform">The inverse of Transform</param>
-public record class TileContext(
-    Uri BaseUri,
-    Transform Transform,
-    Transform InverseTransform
-)
-{
-    // TODO: Find out what this should be
-    // TODO: should this be set based on model location
-    /// <summary>
-    /// The transform to convert from 3D Tiles space to Rhino3d space.
-    /// </summary>
-    internal static Transform BaseTransform = Transform.Identity;
-
-    public TileContext(Uri BaseUri) : this(BaseUri, BaseTransform, Helpers.Inverse(BaseTransform)) { }
-
-    /// <summary>
-    /// Create a new context for a tile.
-    /// </summary>
-    public TileContext EnterTile(Tile tile)
-    {
-        return new TileContext(BaseUri, Transform * tile.Transform, Helpers.Inverse(tile.Transform) * InverseTransform);
-    }
-
-    private double ScreenSpaceError(double geometricError, BoundingVolume boundingVolume, uint screenHeight, double fovy, Point3d camera)
-    {
-        camera = InverseTransform * camera;
-
-        double tileDistance;
-        if (boundingVolume.Sphere is not null)
-        {
-            var centerDist = boundingVolume.Sphere.Center.DistanceTo(camera);
-            tileDistance = Math.Max(centerDist - boundingVolume.Sphere.Radius, 0);
-        }
-        else if (boundingVolume.Box is not null)
-        {
-            var closest = boundingVolume.Box.AsBox().ClosestPoint(camera);
-            tileDistance = closest.DistanceTo(camera);
-        }
-        else
-        {
-            // TODO: make this work
-            throw new NotImplementedException("BoundingRegion support has not been added yet");
-        }
-
-        return geometricError * screenHeight / (tileDistance * 2 * Math.Tan(fovy / 2));
-
-    }
-
-    /// <summary>
-    /// Compute the screen space error for this tile.
-    /// </summary>
-    /// <param name="screenHeight">The height of the screen in pixels</param>
-    /// <param name="fovy">The field-of-view angle in radians in the y direction</param>
-    /// <param name="camera">The location of the camera</param>
-    /// <returns></returns>
-    public double ScreenSpaceError(Tile tile, uint screenHeight, double fovy, Point3d camera)
-    {
-        return ScreenSpaceError(tile.GeometricError, tile.BoundingVolume, screenHeight, fovy, camera);
-    }
-
-    public double ScreenSpaceError(Tileset tileset, uint screenHeight, double fovy, Point3d camera)
-    {
-        return ScreenSpaceError(tileset.GeometricError, tileset.Root.BoundingVolume, screenHeight, fovy, camera);
-    }
-}
-*/
