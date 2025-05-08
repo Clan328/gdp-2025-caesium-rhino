@@ -147,7 +147,7 @@ namespace CesiumAuthentication
                     RhinoApp.InvokeOnUiThread(new Action(() => {
                         MessageBox.Show("Authentication successful!");
                         if (fetchRedirect) {
-                            RhinoApp.RunScript("Fetch", false);
+                            RhinoApp.RunScript(LoadTilesCommand.Instance.EnglishName, false);
                         }
                     }));
 
