@@ -201,9 +201,7 @@ namespace LoadTiles
         /// Check if the tile is sufficiently detailed.
         /// This determines whether the tile should be loaded, or if it should be refined instead.
         /// <br/>
-        /// This is currently based on the distance between the tile and the target point, and the geometric error of the tile.
-        /// <br/>
-        /// TODO: Make this based on SSE (Screen Space Error) instead, which requires distance between tile and camera
+        /// This is based on the distance between the tile and the target point, and the geometric error of the tile.
         /// </summary>
         /// <param name="tile">Tile to check</param>
         /// <param name="targetPoint">Point3d object to check distance to</param>
@@ -212,7 +210,7 @@ namespace LoadTiles
         {
             double distance = Helper.PointDistanceToTile(targetPoint, tile);
             double geometricError = tile.GeometricError;
-            double threshold = Math.Min(20, distance*0.02);  // TODO: Refine this, or make this a user-specified value?
+            double threshold = Math.Min(20, distance*0.02);
             return geometricError < threshold;
         }
 
