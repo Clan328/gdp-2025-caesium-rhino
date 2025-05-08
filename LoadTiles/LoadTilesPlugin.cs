@@ -48,16 +48,8 @@ namespace LoadTiles
         /// </summary>
         protected override void WriteDocument(RhinoDoc doc, Rhino.FileIO.BinaryArchiveWriter archive, Rhino.FileIO.FileWriteOptions options) {
             Console.WriteLine("WriteDocument invoked");
-            Rhino.Commands.Command[] commands = GetCommands();
-            LoadTilesCommand loadTilesCommand = null;
-            MaskingCommand maskingCommand = null;
-            foreach (Rhino.Commands.Command command in commands) {
-                if (command.EnglishName == "Fetch") {
-                    loadTilesCommand = (LoadTilesCommand) command;
-                } else if (command.EnglishName == "Mask") {
-                    maskingCommand = (MaskingCommand) command;
-                }
-            }
+            LoadTilesCommand loadTilesCommand = LoadTilesCommand.Instance;
+            MaskingCommand maskingCommand = MaskingCommand.Instance;
             if (loadTilesCommand == null) {
                 Console.WriteLine("Couldn't find the LoadTilesCommand object. Can't write anything to file.");
                 return;
@@ -116,16 +108,8 @@ namespace LoadTiles
                     maskingObjectsString = userDataDictionary.GetString("maskingObjects");
                 } catch {}
 
-                Rhino.Commands.Command[] commands = GetCommands();
-                LoadTilesCommand loadTilesCommand = null;
-                MaskingCommand maskingCommand = null;
-                foreach (Rhino.Commands.Command command in commands) {
-                    if (command.EnglishName == "Fetch") {
-                        loadTilesCommand = (LoadTilesCommand) command;
-                    } else if (command.EnglishName == "Mask") {
-                        maskingCommand = (MaskingCommand) command;
-                    }
-                }
+                LoadTilesCommand loadTilesCommand = LoadTilesCommand.Instance;
+                MaskingCommand maskingCommand = MaskingCommand.Instance;
                 if (loadTilesCommand == null) {
                     Console.WriteLine("Couldn't find the LoadTilesCommand object. Can't read anything from file.");
                     return;

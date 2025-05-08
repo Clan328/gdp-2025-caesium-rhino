@@ -24,7 +24,10 @@ namespace LoadTiles
 
         public LoadTilesCommand()
         {
+            Instance = this;
         }
+
+        public static LoadTilesCommand Instance { get; set;}
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
         public override string EnglishName => "Fetch";
@@ -116,26 +119,14 @@ namespace LoadTiles
         }
 
         private void reapplyMaskingFromFile(RhinoDoc doc) {
-            Command[] commands = PlugIn.GetCommands();
-            MaskingCommand maskingCommand = null;
-            foreach (Command command in commands) {
-                if (command.EnglishName == "Mask") {
-                    maskingCommand = (MaskingCommand) command;
-                }
-            }
+            MaskingCommand maskingCommand = MaskingCommand.Instance;
             if (maskingCommand == null) return;
 
             maskingCommand.applyMaskingDataFromFile(doc);
         }
 
         private bool hasMaskingDataBeenFound() {
-            Command[] commands = PlugIn.GetCommands();
-            MaskingCommand maskingCommand = null;
-            foreach (Command command in commands) {
-                if (command.EnglishName == "Mask") {
-                    maskingCommand = (MaskingCommand) command;
-                }
-            }
+            MaskingCommand maskingCommand = MaskingCommand.Instance;
             if (maskingCommand == null) return false;
 
             return maskingCommand.maskingDataFromFile.Length > 0;
