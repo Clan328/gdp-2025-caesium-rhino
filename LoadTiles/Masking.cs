@@ -18,6 +18,10 @@ public class MaskingCommand : Command {
 
     public string maskingDataFromFile = "";
 
+    public MaskingCommand() {
+        Instance = this;
+    }
+
     public void applyMaskingDataFromFile(RhinoDoc doc) {
         if (maskingDataFromFile.Length == 0) return;
 
@@ -91,13 +95,7 @@ public class MaskingCommand : Command {
         var targetMesh = Mesh.CreateFromBrep(targetBrep, MeshingParameters.Default);
         targetBrep.Flip();
 
-        Command[] commands = PlugIn.GetCommands();
-        LoadTilesCommand loadTilesCommand = null;
-        foreach (Command command in commands) {
-            if (command.EnglishName == "SealionFetch") {
-                loadTilesCommand = (LoadTilesCommand) command;
-            }
-        }
+        LoadTilesCommand loadTilesCommand = LoadTilesCommand.Instance;
         if (loadTilesCommand == null) {
             Console.WriteLine("Couldn't find the LoadTilesCommand object. Can't determine intersecting objects.");
             return Result.Failure;
@@ -173,4 +171,6 @@ public class MaskingCommand : Command {
 
         return Result.Success;
     }
+
+    public static MaskingCommand Instance { get; set; }
 }
