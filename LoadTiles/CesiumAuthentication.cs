@@ -28,7 +28,7 @@ namespace CesiumAuthentication
         // Tracks logged-in status
         public static bool IsLoggedIn => !string.IsNullOrEmpty(CesiumAccessToken);
 
-        private const string CLIENT_ID = "1108"; // ID of OAuth application; TODO: Move this to config file
+        private const string CLIENT_ID = "1108"; // ID of OAuth application
         private const string CLIENT_ID_FETCH = "1143";
 
         private static readonly HttpClient client = new HttpClient();
@@ -81,10 +81,6 @@ namespace CesiumAuthentication
 
         public static void ListenCode(string prefix)
         {
-            // TODO: Error handling for the following cases:
-            //       - If user closes auth website, rhino will freeze forever
-            //       - Bad requests to server should throw error
-            //       - code being null should throw an error
             if (!HttpListener.IsSupported)
             {
                 Console.WriteLine ("HttpListener class is not supported by OS.");
@@ -123,7 +119,6 @@ namespace CesiumAuthentication
                 output.Close();
 
                 if (code == null) {
-                    // TODO: Throw error
                     continue;
                 }
 
@@ -139,7 +134,6 @@ namespace CesiumAuthentication
                 HttpResponseMessage response = Task.Run(() => client.PostAsync("https://api.cesium.com/oauth/token", content)).GetAwaiter().GetResult();
                 
                 if (!response.IsSuccessStatusCode) {
-                    // TODO: Throw error based on code
                     continue;
                 }
                 
@@ -190,7 +184,7 @@ namespace CesiumAuthentication
     public class CesiumLogoutCommand : Command
     {
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "CesiumLogout";
+        public override string EnglishName => "SealionLogout";
 
         /// <summary>
         /// Handles the user running the command.
@@ -212,7 +206,7 @@ namespace CesiumAuthentication
     public class CesiumLoginCommand : Command
     {
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "CesiumLogin";
+        public override string EnglishName => "SealionLogin";
 
         /// <summary>
         /// Handles the user running the command.
@@ -227,6 +221,3 @@ namespace CesiumAuthentication
         }
     }
 }
-
-// TODO (SKYE) : Implement a way to mark status as 'logged in' or 'logged out', storing access key for session. [x]
-// TODO (SKYE) : Embed this process into the GUI [x]

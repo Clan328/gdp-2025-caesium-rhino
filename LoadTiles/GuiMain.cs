@@ -285,7 +285,6 @@ public class LoadTilesGUI : Dialog<DialogResult> {
 
     private void selectNewModel() {
         if (!AuthSession.IsLoggedIn) {
-            // TODO: Throw error; this should not happen
             return;
         }
 
