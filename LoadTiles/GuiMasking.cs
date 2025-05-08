@@ -124,6 +124,9 @@ public class MaskingDialog : Dialog<bool> {
     }
 
     private void highlightObject(Guid objectId) {
+        /* At the moment this only has an effect once you close the window.
+         * I haven't looked into how to make this happen while the window is still open. */
+         
         if (this.highlightedObject != null) {
             this.doc.Objects.FindId((Guid) this.highlightedObject).Highlight(false);
         }

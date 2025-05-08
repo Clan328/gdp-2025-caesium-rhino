@@ -49,7 +49,7 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
         var headerPanel = Styling.createHeaderPanel(
             "Cesium ion assets",
             "These are the assets that you have access to with your Cesium ion account. Select which one you'd like to import.",
-            false // TODO: maybe implement help?
+            false
         );
         var assetsPanel = createAssetsPanel(assets);
         var buttonDynamicLayout = createButtonPanel();
@@ -81,7 +81,10 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
             assetsDynamicLayout.Add(assetPanel, true, false);
         }
 
-        assetsDynamicLayout.Add(null, false, false); // TODO: why is there random blank space at the bottom of the Scrollable?
+        /* There's an issue (I believe only on Windows?) where there's loads of blank space
+         * at the bottom of this container. I tried for a long time to fix it and I couldn't.
+         * Hopefully it's not too big of a problem. */
+        assetsDynamicLayout.Add(null, false, false);
 
         assetsDynamicLayout.EndVertical();
 

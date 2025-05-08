@@ -65,6 +65,8 @@ public class LoadTilesGUI : Dialog<DialogResult> {
             "What data do you want to import?",
             true
         );
+
+        // Each DynamicLayout corresponds to one of the "cards" on the window
         var authDynamicLayout = createAuthenticationPanel();
         var modelDynamicLayout = createModelPanel();
         var positionDynamicLayout = createPositionPanel();
@@ -99,6 +101,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
             Close(null);
         };
 
+        // Logged in status text and button
         var loggedInStatusDynamicLayout = new DynamicLayout {
             Padding = new Padding(0, 15, 0, 0)
         };
@@ -108,6 +111,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
         loggedInStatusDynamicLayout.Add(this.authButton);
         loggedInStatusDynamicLayout.EndHorizontal();
         
+        // Container for whole card
         var authDynamicLayoutInner = new DynamicLayout {
             BackgroundColor = Styling.colourDark,
             Padding = 10
@@ -140,6 +144,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
             this.selectNewModel();
         };
 
+        // Current model name label and "Change" button
         var currentModelDynamicLayout = new DynamicLayout {
             Padding = new Padding(0, 15, 0, 0)
         };
@@ -149,6 +154,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
         currentModelDynamicLayout.Add(changeModelButton);
         currentModelDynamicLayout.EndHorizontal();
 
+        // Container for whole card
         var modelDynamicLayoutInner = new DynamicLayout {
             BackgroundColor = Styling.colourDark,
             Padding = 10
@@ -215,6 +221,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
         radiusDynamicLayout.Add(radiusTextBoxDynamicLayout, true);
         radiusDynamicLayout.EndVertical();
 
+        // 2x2 grid
         TableLayout positionTableLayout = new TableLayout {
             Spacing = new Size(20, 20),
             Padding = new Padding(0, 20, 0, 0),
@@ -224,6 +231,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
             }
         };
 
+        // Container for whole card
         var positionDynamicLayoutInner = new DynamicLayout {
             BackgroundColor = Styling.colourDark,
             Padding = 10
@@ -295,6 +303,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
     }
 
     public void prefillData(double latitude, double longitude, double? altitude, double radius, CesiumAsset selectedAsset) {
+        // Called if we detect saved data in the currently loaded project
         this.latitudeTextBox.Text = latitude.ToString();
         this.longitudeTextBox.Text = longitude.ToString();
         this.altitudeTextBox.Text = altitude != null ? altitude.ToString() : "";
