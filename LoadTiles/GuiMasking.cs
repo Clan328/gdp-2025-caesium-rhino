@@ -13,7 +13,7 @@ public class MaskingDialog : Dialog<bool> {
     private Dictionary<Guid, Panel> objectPanels;
     private Guid? highlightedObject = null;
     public MaskingDialog(MaskingCommand maskingCommand, RhinoDoc doc) {
-        Title = "Masking options";
+        Title = "SeaLion: Masking";
         ClientSize = new Size(600, 400);
         Resizable = true;
         

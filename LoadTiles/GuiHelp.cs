@@ -7,7 +7,7 @@ namespace LoadTiles;
 
 public class GDPHelpDialog : Dialog<bool> {
     public GDPHelpDialog() {
-        Title = "Help";
+        Title = "SeaLion: Help";
         ClientSize = new Size(500, 600);
 
         Content = createDialogContent();
@@ -16,7 +16,7 @@ public class GDPHelpDialog : Dialog<bool> {
     private DynamicLayout createDialogContent() {
         var headerPanel = Styling.createHeaderPanel(
             "Help",
-            "How to use the LoadTiles plugin",
+            "How to use SeaLion",
             false
         );
         var authTextDynamicLayout = createAuthenticationTextPanel();
@@ -47,7 +47,7 @@ public class GDPHelpDialog : Dialog<bool> {
         };
 
         var longTextLabel = Styling.label(
-            "In order to import data, you need to have a Cesium ion access token. You'll first need to sign up for an account. Once you've done that, you should be able to log in to this plugin and start importing data.",
+            "In order to import data, you need to have a Cesium ion access token. You'll first need to sign up for an account. Once you've done that, you should be able to log in to SeaLion and start importing data.",
             9
         );
         var linkButton = new LinkButton {
@@ -117,7 +117,7 @@ public class GDPHelpDialog : Dialog<bool> {
         };
 
         var longTextLabel = Styling.label(
-            "This plugin has the ability to mask out some of the data imported. You can do this by adding an object to your project to act as the bounds for the masking, and then running the \"Mask\" command to manage the masking objects in your current project. This is saved when you save your project, so that it's simple to perform the same masking again the next time you open the file. You can rename these masking objects to make them easier to manage, and remove them if they're no longer needed.",
+            "SeaLion has the ability to mask out some of the data imported. You can do this by adding an object to your project to act as the bounds for the masking, and then running the \"Mask\" command to manage the masking objects in your current project. This is saved when you save your project, so that it's simple to perform the same masking again the next time you open the file. You can rename these masking objects to make them easier to manage, and remove them if they're no longer needed.",
             9
         );
 
@@ -164,7 +164,7 @@ public class GDPHelpDialog : Dialog<bool> {
 
 public class MaskingHelpDialog : Dialog<bool> {
     public MaskingHelpDialog() {
-        Title = "Help";
+        Title = "SeaLion: Help";
         ClientSize = new Size(500, 450);
 
         Content = createDialogContent();

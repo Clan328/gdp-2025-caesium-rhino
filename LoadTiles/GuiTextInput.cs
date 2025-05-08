@@ -10,7 +10,7 @@ public class TextInputDialog : Dialog<string?> {
 
     private TextBox textBox;
     public TextInputDialog(string title, string subtitle, string defaultValue) {
-        Title = title;
+        Title = $"SeaLion: {title}";
         ClientSize = new Size(300, 240);
         Resizable = false;
 

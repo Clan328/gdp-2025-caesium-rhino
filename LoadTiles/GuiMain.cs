@@ -51,7 +51,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
     }
 
     public LoadTilesGUI() {
-        Title = "Fetch real world data";
+        Title = "SeaLion: Fetch data";
         ClientSize = new Size(400, 550);
 
         this.selectedAsset = this.getDefaultSelectedAsset();

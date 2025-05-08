@@ -38,7 +38,7 @@ public record class CesiumAssets (
 
 public class CesiumImportDialog : Dialog<CesiumAsset?> {  
     public CesiumImportDialog(List<CesiumAsset> assets) {
-        Title = "Cesium ion assets";
+        Title = "SeaLion: Cesium ion assets";
         ClientSize = new Size(800, 600);
         Resizable = true;
 
