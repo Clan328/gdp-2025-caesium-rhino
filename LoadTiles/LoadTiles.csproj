@@ -31,5 +31,9 @@
   <ItemGroup>
     <ProjectReference Include="..\TilesData\TilesData.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="picker.html" />
+  </ItemGroup>
   
 </Project>

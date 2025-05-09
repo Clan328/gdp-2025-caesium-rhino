@@ -10,7 +10,9 @@ using Rhino.UI;
 using System.Collections.Generic;
 using System.Text.Json;
 using CesiumAuthentication;
-using Rhino.PlugIns;
+using System.IO;
+using System.Reflection;
+
 
 namespace LoadTiles;
 
@@ -28,6 +30,63 @@ public class DialogResult {
         this.longitude = longitude;
         this.altitude = altitude;
         this.radius = radius;
+    }
+}
+
+public class Coordinate {
+    public double latitude, longitude;
+
+    public Coordinate(double latitude, double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+};
+
+public class CoordinatePicker : Dialog<Coordinate>
+{
+    public CoordinatePicker()
+    {
+        Title = "Location Picker";
+        ClientSize = new Size(1024, 512);
+
+        string html;
+        var assembly = Assembly.GetExecutingAssembly();
+        string resourceName = "LoadTiles.picker.html";
+            
+        using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+        using (StreamReader reader = new StreamReader(stream))
+        {
+            html = reader.ReadToEnd();
+        }
+
+        string tempPath = Path.Combine(Path.GetTempPath(), "picker.html");
+        File.WriteAllText(tempPath, html);
+
+        var webView = new WebView
+        {
+            Url = new Uri(tempPath),
+            BackgroundColor = Colors.White
+        };
+
+       webView.DocumentTitleChanged += (s, e) =>
+        {
+            if (!e.Title.StartsWith("rhino://")) return;
+
+            var uri = new Uri(e.Title);
+            if (uri.Scheme == "rhino")
+            {
+                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+                string latitude = query["latitude"];
+                string longitude = query["longitude"];
+
+                RhinoApp.WriteLine($"Picked coordinates: Lat {latitude}, Lng {longitude}");
+                Close(new Coordinate(Convert.ToDouble(latitude), Convert.ToDouble(longitude)));
+            }
+        };
+
+        Content = webView;
+        AbortButton = new Button{Text = "Cancel"};
+        AbortButton.Click += (sender, e) => Close(null);
     }
 }
 
@@ -221,12 +280,22 @@ public class LoadTilesGUI : Dialog<DialogResult> {
         radiusDynamicLayout.Add(radiusTextBoxDynamicLayout, true);
         radiusDynamicLayout.EndVertical();
 
+        var coordinatePickerButton = new Button{Text = "C"};
+        coordinatePickerButton.Click += (sender, e) => {
+            var window = new CoordinatePicker();
+            Coordinate coords = window.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+            if (coords != null) {
+                latitudeTextBox.Text = coords.latitude.ToString();
+                longitudeTextBox.Text = coords.longitude.ToString();
+            }
+        };
+
         // 2x2 grid
         TableLayout positionTableLayout = new TableLayout {
             Spacing = new Size(20, 20),
             Padding = new Padding(0, 20, 0, 0),
             Rows = {
-                new TableRow(latitudeDynamicLayout, longitudeDynamicLayout),
+                new TableRow(latitudeDynamicLayout, longitudeDynamicLayout, coordinatePickerButton),
                 new TableRow(altitudeDynamicLayout, radiusDynamicLayout)
             }
         };
