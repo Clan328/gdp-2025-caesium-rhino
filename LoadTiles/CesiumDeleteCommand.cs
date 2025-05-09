@@ -15,6 +15,10 @@ namespace LoadTiles
             TemporaryGeometryConduit displayConduit = TemporaryGeometryConduit.Instance;
             displayConduit.Reset();
 
+            AttributionConduit.Instance.removeImage();
+            AttributionConduit.Instance.setClickURL("");
+            AttributionConduit.Instance.setAttributionText("");
+
             return Result.Success;
         }
     }

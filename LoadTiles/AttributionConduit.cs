@@ -51,6 +51,13 @@ public class AttributionConduit : DisplayConduit {
         }
     }
 
+    public void removeImage() {
+        if (this.logoImage == null) return;
+        
+        this.logoImage.Dispose();
+        this.logoImage = null;
+    }
+
     public void setAttributionText(string attributionText) {
         this.attributionText = attributionText;
     }
