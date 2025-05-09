@@ -16,10 +16,10 @@
   
   <PropertyGroup>
     <!-- Specifies information for Assembly and Yak -->
-    <Version>1.0</Version>
-    <Title>LoadTiles</Title>
-    <Company>LoadTiles Authors</Company>
-    <Description>Description of LoadTiles</Description>
+    <Version>1.0.1</Version>
+    <Title>SeaLion</Title>
+    <Company>Zoe Stafford, Skye Yi-Hardie, Patrick Guan, Hugo Dominguez Santana, Christopher Morson, Dylan Heydon-Matterface</Company>
+    <Description>Integrate Cesium Ion 3D Tiles into Rhino3D</Description>
   </PropertyGroup>
   
   <ItemGroup>
