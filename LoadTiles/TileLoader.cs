@@ -46,6 +46,9 @@ namespace LoadTiles
         protected virtual void OnFetchGLB(byte[] glbBytes) {}
         protected virtual void OnTilesLoaded(RhinoDoc doc, List<RhinoObject> newObjects) {}
 
+        // Counter for the number of tiles loaded
+        private int tileCount = 0;
+
         protected TileLoader()
         {
         }
@@ -111,6 +114,12 @@ namespace LoadTiles
         protected virtual string FormUrl(string url) 
         {
             return url;
+        }
+
+        private void IncrementTileCount() 
+        {
+            tileCount++;
+            if (tileCount % 10 == 0) RhinoApp.WriteLine($"Loaded {tileCount} tiles...");
         }
 
         /// <summary>
@@ -246,11 +255,19 @@ namespace LoadTiles
                 string filetype = linkparts[linkparts.Length - 1];
                 if (filetype == "glb") 
                 {   // Content of this tile is a GLB file
-                    if (shouldLoadObjects) LoadGLB(doc, tile, targetPoint);
+                    if (shouldLoadObjects) 
+                    {
+                        LoadGLB(doc, tile, targetPoint);
+                        IncrementTileCount();
+                    }
                 }
                 else if (filetype == "b3dm")
                 {   // Content of this tile is a B3DM file
-                    if (shouldLoadObjects) LoadB3DM(doc, tile, targetPoint);
+                    if (shouldLoadObjects) 
+                    {
+                        LoadB3DM(doc, tile, targetPoint);
+                        IncrementTileCount();
+                    }
                 }
                 else if (filetype == "json") 
                 {   // Content of this tile is a JSON link (make a further API call)
@@ -282,7 +299,7 @@ namespace LoadTiles
         /// <returns>List of Rhino objects that were loaded</returns>
         public List<RhinoObject> LoadTiles(RhinoDoc doc, List<Guid> existingObjects, Point3d targetPoint, double renderDistance, string cesiumIonApiKey) 
         {
-            RhinoApp.WriteLine("Loading tiles...");
+            RhinoApp.WriteLine("Loading tiles, please wait...");
 
             // Call the API to get the root tile
             InitApiParameters(cesiumIonApiKey);
