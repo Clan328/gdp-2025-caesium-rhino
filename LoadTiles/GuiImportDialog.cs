@@ -126,7 +126,10 @@ public class CesiumImportDialog : Dialog<CesiumAsset?> {
             Items = { idLabel, dateLabel }
         };
 
-        Button importButton = new Button{Text = (available? "Select" : "Not supported yet")};
+        Button importButton = new Button{
+            Text = (available? "Select" : "Unsupported"),
+            Enabled = available
+        };
         importButton.Click += (sender, e) => {
             if (available) Close(asset);
         };
