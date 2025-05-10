@@ -46,7 +46,7 @@ public class CoordinatePicker : Dialog<Coordinate>
 {
     public CoordinatePicker()
     {
-        Title = "Location Picker";
+        Title = "SeaLion: Location picker";
         ClientSize = new Size(1024, 512);
 
         string html;
@@ -235,6 +235,23 @@ public class LoadTilesGUI : Dialog<DialogResult> {
     private DynamicLayout createPositionPanel() {
         var positionLabel = Styling.label("Position", 12);
 
+        var coordinatePickerButton = new Button{Text = "  Select from map  "};
+        coordinatePickerButton.Click += (sender, e) => {
+            var window = new CoordinatePicker();
+            Coordinate coords = window.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
+            if (coords != null) {
+                latitudeTextBox.Text = coords.latitude.ToString();
+                longitudeTextBox.Text = coords.longitude.ToString();
+            }
+        };
+
+        var positionLabelDynamicLayout = new DynamicLayout();
+        positionLabelDynamicLayout.BeginHorizontal();
+        positionLabelDynamicLayout.Add(positionLabel);
+        positionLabelDynamicLayout.Add(null, true);
+        positionLabelDynamicLayout.Add(coordinatePickerButton);
+        positionLabelDynamicLayout.EndHorizontal();
+
         var latitudeLabel = Styling.label("Latitude", 10);
         this.latitudeTextBox = new TextBox();
         var latitudeDynamicLayout = new DynamicLayout();
@@ -280,22 +297,12 @@ public class LoadTilesGUI : Dialog<DialogResult> {
         radiusDynamicLayout.Add(radiusTextBoxDynamicLayout, true);
         radiusDynamicLayout.EndVertical();
 
-        var coordinatePickerButton = new Button{Text = "C"};
-        coordinatePickerButton.Click += (sender, e) => {
-            var window = new CoordinatePicker();
-            Coordinate coords = window.ShowModal(Rhino.UI.RhinoEtoApp.MainWindow);
-            if (coords != null) {
-                latitudeTextBox.Text = coords.latitude.ToString();
-                longitudeTextBox.Text = coords.longitude.ToString();
-            }
-        };
-
         // 2x2 grid
         TableLayout positionTableLayout = new TableLayout {
             Spacing = new Size(20, 20),
             Padding = new Padding(0, 20, 0, 0),
             Rows = {
-                new TableRow(latitudeDynamicLayout, longitudeDynamicLayout, coordinatePickerButton),
+                new TableRow(latitudeDynamicLayout, longitudeDynamicLayout),
                 new TableRow(altitudeDynamicLayout, radiusDynamicLayout)
             }
         };
@@ -306,7 +313,7 @@ public class LoadTilesGUI : Dialog<DialogResult> {
             Padding = 10
         };
         positionDynamicLayoutInner.BeginVertical();
-        positionDynamicLayoutInner.Add(positionLabel);
+        positionDynamicLayoutInner.Add(positionLabelDynamicLayout);
         positionDynamicLayoutInner.Add(positionTableLayout, true);
         positionDynamicLayoutInner.EndVertical();
         var positionDynamicLayout = new DynamicLayout {
